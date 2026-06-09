@@ -11,8 +11,8 @@ const weekLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const defaultDailyProduction = [28, 46, 38, 57, 49, 72];
 
 export default function DashboardPage() {
-  const { data, setEmpresaAtiva } = useErpData();
-  const resumo = calcularResumoERP(data);
+  const { data, dataByCompany, empresaAtiva, setEmpresaAtiva } = useErpData();
+  const resumo = calcularResumoERP(dataByCompany);
   const teamEntries = Object.entries(resumo.productionByTeam);
   const dailyProduction = buildDailySeries(resumo.productionMonth);
   const productionByType = buildProductionByType(resumo.productionMonth);
@@ -34,7 +34,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className="mt-4 max-w-3xl text-sm text-slate-400">
-              Painel consolidado de todas as empresas: TCI TELECOM, DCF TELECOM e NEW TELECOM.
+              Painel de {empresaAtiva}. Clique nos cards das empresas para trocar os cálculos do Dashboard.
             </p>
           </div>
 
@@ -60,7 +60,7 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_0.85fr]">
+          <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_0.85fr]" id="indicadores">
             <Panel title="Produção por dia">
               <LineChart values={dailyProduction} />
             </Panel>
@@ -87,7 +87,7 @@ export default function DashboardPage() {
 
         <section className="grid gap-4 md:grid-cols-4">
           <FeatureCard href="/operacao" icon="⌕" title="Dados em tempo real" />
-          <FeatureCard href="/dashboard" icon="⌁" title="Indicadores de desempenho" />
+          <FeatureCard href="/dashboard#indicadores" icon="⌁" title="Indicadores de desempenho" />
           <FeatureCard href="/financeiro" icon="↗" title="Tomada de decisão rápida" />
           <FeatureCard href="/funcionarios" icon="▣" title="Gestão por resultados" />
         </section>

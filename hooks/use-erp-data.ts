@@ -137,11 +137,29 @@ export function createId(prefix: string) {
 }
 
 function normalizeStoredData(data: ErpData): ErpData {
+  const mergedData = mergeWithDefaults(data);
+
+  return {
+    ...mergedData,
+    production: mergedData.production.map((record) => ({ ...record, empresa: record.empresa ?? "TCI TELECOM" })),
+    finance: mergedData.finance.map((record) => ({ ...record, empresa: record.empresa ?? "TCI TELECOM" })),
+    vr: mergedData.vr.map((record) => ({ ...record, empresa: record.empresa ?? "TCI TELECOM" })),
+    employees: mergedData.employees.map((record) => ({ ...record, empresa: record.empresa ?? "TCI TELECOM" })),
+  };
+}
+
+function mergeWithDefaults(data: ErpData): ErpData {
   return {
     ...data,
-    production: data.production.map((record) => ({ ...record, empresa: record.empresa ?? "TCI TELECOM" })),
-    finance: data.finance.map((record) => ({ ...record, empresa: record.empresa ?? "TCI TELECOM" })),
-    vr: data.vr.map((record) => ({ ...record, empresa: record.empresa ?? "TCI TELECOM" })),
-    employees: data.employees.map((record) => ({ ...record, empresa: record.empresa ?? "TCI TELECOM" })),
+    conectaCodes: mergeById(defaultErpData.conectaCodes, data.conectaCodes),
+    production: mergeById(defaultErpData.production, data.production),
+    finance: mergeById(defaultErpData.finance, data.finance),
+    vr: mergeById(defaultErpData.vr, data.vr),
+    employees: mergeById(defaultErpData.employees, data.employees),
   };
+}
+
+function mergeById<T extends { id: string }>(defaults: T[], stored: T[]) {
+  const storedIds = new Set(stored.map((item) => item.id));
+  return [...stored, ...defaults.filter((item) => !storedIds.has(item.id))];
 }
