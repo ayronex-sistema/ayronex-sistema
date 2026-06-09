@@ -1,8 +1,8 @@
-import './globals.css';
+import "./globals.css";
 
 export const metadata = {
-  title: 'Sistema Ayronex',
-  description: 'Importador de Planilha de Funcionários',
+  title: "Sistema Ayronex",
+  description: "Dashboard gerencial Ayronex",
 };
 
 export default function RootLayout({
@@ -12,9 +12,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body suppressHydrationWarning>
-        {children}
-      </body>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }
