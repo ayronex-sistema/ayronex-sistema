@@ -11,7 +11,7 @@ const weekLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const defaultDailyProduction = [28, 46, 38, 57, 49, 72];
 
 export default function DashboardPage() {
-  const { data } = useErpData();
+  const { data, setEmpresaAtiva } = useErpData();
   const resumo = calcularResumoERP(data);
   const teamEntries = Object.entries(resumo.productionByTeam);
   const dailyProduction = buildDailySeries(resumo.productionMonth);
@@ -56,7 +56,7 @@ export default function DashboardPage() {
 
           <div className="mt-4 grid gap-3 lg:grid-cols-3">
             {companyOverview.map((company) => (
-              <CompanySummaryCard key={company.name} {...company} />
+              <CompanySummaryCard key={company.name} onSelect={setEmpresaAtiva} {...company} />
             ))}
           </div>
 
@@ -102,15 +102,21 @@ function CompanySummaryCard({
   despesas,
   saldo,
   producao,
+  onSelect,
 }: {
   name: CompanyName;
   faturamento: number;
   despesas: number;
   saldo: number;
   producao: number;
+  onSelect: (company: CompanyName) => void;
 }) {
   return (
-    <article className="rounded-2xl border border-yellow-950/50 bg-black/30 p-4">
+    <button
+      className="rounded-2xl border border-yellow-950/50 bg-black/30 p-4 text-left transition hover:-translate-y-0.5 hover:border-yellow-500/60 hover:bg-yellow-500/10 focus:outline-none focus:ring-2 focus:ring-yellow-500/40"
+      onClick={() => onSelect(name)}
+      type="button"
+    >
       <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-yellow-500">{name}</p>
       <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
         <MiniValue label="Produção" value={String(producao)} />
@@ -118,7 +124,8 @@ function CompanySummaryCard({
         <MiniValue label="Despesas" value={formatCurrency(despesas)} />
         <MiniValue label="Saldo previsto" value={formatCurrency(saldo)} tone={saldo >= 0 ? "positive" : "negative"} />
       </div>
-    </article>
+      <p className="mt-4 text-xs font-semibold text-yellow-300/80">Clique para selecionar esta empresa</p>
+    </button>
   );
 }
 

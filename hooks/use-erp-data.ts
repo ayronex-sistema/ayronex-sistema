@@ -15,7 +15,7 @@ export function useErpData() {
     }
 
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored ? { ...defaultErpData, ...JSON.parse(stored) } : defaultErpData;
+    return stored ? normalizeStoredData({ ...defaultErpData, ...JSON.parse(stored) }) : defaultErpData;
   });
   const [empresaAtiva, setEmpresaAtivaState] = useState<CompanyName>(() => {
     if (typeof window === "undefined") {
@@ -134,4 +134,14 @@ export function useErpData() {
 
 export function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function normalizeStoredData(data: ErpData): ErpData {
+  return {
+    ...data,
+    production: data.production.map((record) => ({ ...record, empresa: record.empresa ?? "TCI TELECOM" })),
+    finance: data.finance.map((record) => ({ ...record, empresa: record.empresa ?? "TCI TELECOM" })),
+    vr: data.vr.map((record) => ({ ...record, empresa: record.empresa ?? "TCI TELECOM" })),
+    employees: data.employees.map((record) => ({ ...record, empresa: record.empresa ?? "TCI TELECOM" })),
+  };
 }

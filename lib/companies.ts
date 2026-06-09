@@ -6,6 +6,8 @@ export const DEFAULT_COMPANY: CompanyName = "NEW TELECOM";
 
 export const COMPANY_STORAGE_KEY = "ayronex-active-company";
 
+export const LEGACY_COMPANY: CompanyName = "TCI TELECOM";
+
 export function isCompanyName(value: unknown): value is CompanyName {
   return typeof value === "string" && companies.includes(value as CompanyName);
 }
@@ -19,7 +21,7 @@ export function getRecordCompany(record: { empresa?: CompanyName | string }) {
     return "NEW TELECOM";
   }
 
-  return isCompanyName(record.empresa) ? record.empresa : DEFAULT_COMPANY;
+  return isCompanyName(record.empresa) ? record.empresa : LEGACY_COMPANY;
 }
 
 export function filterErpDataByCompany(data: ErpData, empresa: CompanyName): ErpData {
