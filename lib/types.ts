@@ -43,17 +43,45 @@ export type VrRecord = {
   amount: number;
 };
 
-export type EmployeeStatus = "Ativo" | "Inativo";
+export type EmployeeStatus = "ATIVO" | "INATIVO";
 
-export type EmployeeTeam = "Operação" | "Financeiro" | "Vendas" | "Atendimento";
+export type EmployeeTeam = string;
 
 export type Employee = {
   id: string;
+  re: string;
+  situacao: EmployeeStatus;
   nome: string;
+  funcionario: string;
   cargo: string;
+  seguimento: string;
   equipe: EmployeeTeam;
-  status: EmployeeStatus;
+  projeto: string;
+  vrDia: string;
+  vt: string;
+  salario: string;
+  clt: string;
+  carro: string;
+  placa: string;
+  admissao: string;
   dataAdmissao: string;
+  vencimentoContrato45: string;
+  vencimentoContrato90: string;
+  eSocial: string;
+  cracha: string;
+  cartaoVrVa: string;
+  cpf: string;
+  rg: string;
+  nomeMae: string;
+  nomePai: string;
+  dataNascimento: string;
+  enderecoCompleto: string;
+  nrs1035: string;
+  vencimentoNrs: string;
+  possuiNrs: string;
+  nrsVencido: string;
+  feriasVencidas: string;
+  podeTirarFerias: string;
 };
 
 export type ErpData = {

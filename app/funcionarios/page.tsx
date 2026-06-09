@@ -1,70 +1,126 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { EmployeeTeamCard } from "@/components/employee-team-card";
 import { ErpShell } from "@/components/erp-shell";
-import { createId, useErpData } from "@/hooks/use-erp-data";
-import type { Employee, EmployeeStatus, EmployeeTeam } from "@/lib/types";
+import { useErpData } from "@/hooks/use-erp-data";
+import { EMPLOYEE_SHEET_NAME, normalizeEmployee } from "@/lib/employees";
+import type { Employee, EmployeeStatus } from "@/lib/types";
 
-const teams: EmployeeTeam[] = ["Operação", "Financeiro", "Vendas", "Atendimento"];
-const statuses: EmployeeStatus[] = ["Ativo", "Inativo"];
-
-const initialForm = {
-  nome: "",
-  cargo: "",
-  equipe: "Operação" as EmployeeTeam,
-  status: "Ativo" as EmployeeStatus,
-  dataAdmissao: new Date().toISOString().slice(0, 10),
+type EmployeesApiResponse = {
+  employees?: Employee[];
+  error?: string;
+  source?: "google-sheets" | "fallback";
+  updatedAt?: string;
 };
 
-export default function FuncionariosPage() {
-  const { data, addEmployee, updateEmployee } = useErpData();
-  const [form, setForm] = useState(initialForm);
-  const [feedback, setFeedback] = useState("");
+type StatusFilter = "TODOS" | EmployeeStatus;
 
-  const groupedTeams = useMemo(
-    () =>
-      teams.map((team) => {
-        const employees = data.employees.filter((employee) => employee.equipe === team);
-        return {
-          team,
-          employees,
-          activeCount: employees.filter((employee) => employee.status === "Ativo").length,
-        };
-      }),
+export default function FuncionariosPage() {
+  const { data, updateEmployee } = useErpData();
+  const [sheetEmployees, setSheetEmployees] = useState<Employee[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [feedback, setFeedback] = useState("Carregando funcionários do Google Sheets...");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("TODOS");
+  const [source, setSource] = useState<"google-sheets" | "fallback">("fallback");
+  const [updatedAt, setUpdatedAt] = useState("");
+
+  const fallbackEmployees = useMemo(
+    () => data.employees.map((employee, index) => normalizeEmployee(employee, index)),
     [data.employees],
   );
 
-  const totalEmployees = data.employees.length;
-  const activeEmployees = data.employees.filter((employee) => employee.status === "Ativo").length;
-  const inactiveEmployees = totalEmployees - activeEmployees;
+  const employees = sheetEmployees ?? fallbackEmployees;
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  useEffect(() => {
+    let active = true;
 
-    if (!form.nome.trim() || !form.cargo.trim()) {
-      setFeedback("Preencha nome e cargo para cadastrar o funcionário.");
-      return;
+    async function loadEmployees() {
+      try {
+        const response = await fetch("/api/funcionarios", { cache: "no-store" });
+        const payload = (await response.json()) as EmployeesApiResponse;
+
+        if (!response.ok || !payload.employees?.length) {
+          throw new Error(payload.error ?? "Não foi possível carregar a planilha.");
+        }
+
+        if (active) {
+          setSheetEmployees(payload.employees.map((employee, index) => normalizeEmployee(employee, index)));
+          setSource("google-sheets");
+          setUpdatedAt(payload.updatedAt ?? "");
+          setFeedback(`Dados carregados da aba ${EMPLOYEE_SHEET_NAME}.`);
+        }
+      } catch (error) {
+        if (active) {
+          const message = error instanceof Error ? error.message : "Falha ao carregar Google Sheets.";
+          setSource("fallback");
+          setFeedback(`${message} Exibindo dados locais de validação.`);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
     }
 
-    addEmployee({
-      id: createId("emp"),
-      nome: form.nome.trim(),
-      cargo: form.cargo.trim(),
-      equipe: form.equipe,
-      status: form.status,
-      dataAdmissao: form.dataAdmissao,
+    loadEmployees();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const filteredEmployees = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return employees.filter((employee) => {
+      const matchesStatus = statusFilter === "TODOS" || employee.situacao === statusFilter;
+      const matchesSearch =
+        !normalizedSearch ||
+        [employee.re, employee.funcionario, employee.cargo, employee.seguimento, employee.equipe, employee.projeto]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedSearch);
+
+      return matchesStatus && matchesSearch;
+    });
+  }, [employees, search, statusFilter]);
+
+  const groupedTeams = useMemo(() => {
+    const groups = new Map<string, Employee[]>();
+
+    filteredEmployees.forEach((employee) => {
+      const team = employee.equipe || "SEM EQUIPE";
+      groups.set(team, [...(groups.get(team) ?? []), employee]);
     });
 
-    setForm(initialForm);
-    setFeedback("Funcionário cadastrado com sucesso.");
-  }
+    return [...groups.entries()]
+      .map(([team, teamEmployees]) => ({
+        team,
+        employees: teamEmployees,
+        activeCount: teamEmployees.filter((employee) => employee.situacao === "ATIVO").length,
+      }))
+      .sort((first, second) => first.team.localeCompare(second.team, "pt-BR"));
+  }, [filteredEmployees]);
+
+  const activeEmployees = employees.filter((employee) => employee.situacao === "ATIVO").length;
+  const inactiveEmployees = employees.filter((employee) => employee.situacao === "INATIVO").length;
+  const teamCount = new Set(employees.map((employee) => employee.equipe || "SEM EQUIPE")).size;
 
   function handleToggleStatus(employee: Employee) {
-    updateEmployee({
+    const updatedEmployee: Employee = {
       ...employee,
-      status: employee.status === "Ativo" ? "Inativo" : "Ativo",
-    });
+      situacao: employee.situacao === "ATIVO" ? "INATIVO" : "ATIVO",
+    };
+
+    if (sheetEmployees) {
+      setSheetEmployees((current) =>
+        current?.map((item) => (item.id === employee.id ? updatedEmployee : item)) ?? current,
+      );
+    } else {
+      updateEmployee(updatedEmployee);
+    }
   }
 
   return (
@@ -72,126 +128,98 @@ export default function FuncionariosPage() {
       <div className="space-y-6">
         <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-yellow-500">Gestão de equipes</p>
-            <h1 className="mt-2 text-3xl font-extrabold text-white">Funcionários</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-400">
-              Controle operacional por equipe, com dados locais prontos para futura integração com Google Sheets.
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-yellow-500">
+              Cadastro Funcionários 2026
+            </p>
+            <h1 className="mt-2 text-3xl font-extrabold text-white">Funcionários por equipe</h1>
+            <p className="mt-2 max-w-3xl text-sm text-slate-400">
+              Visual no mesmo padrão da planilha: situação, funcionário, cargo, seguimento, equipe, projeto,
+              benefícios, contrato, documentação e controles de NRS/férias.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-yellow-950/60 bg-zinc-950/80 px-4 py-3 text-sm text-slate-300">
+            <p className="font-bold text-white">{source === "google-sheets" ? "Google Sheets" : "Dados locais"}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {updatedAt ? `Atualizado: ${formatDateTime(updatedAt)}` : EMPLOYEE_SHEET_NAME}
             </p>
           </div>
         </section>
 
         <section className="grid gap-4 md:grid-cols-4">
-          <SummaryCard label="Total cadastrado" value={totalEmployees.toString()} />
-          <SummaryCard label="Funcionários ativos" value={activeEmployees.toString()} tone="green" />
-          <SummaryCard label="Funcionários inativos" value={inactiveEmployees.toString()} tone="slate" />
-          <SummaryCard label="Equipes" value={teams.length.toString()} tone="yellow" />
+          <SummaryCard label="Total na base" value={employees.length.toString()} />
+          <SummaryCard label="Ativos" value={activeEmployees.toString()} tone="green" />
+          <SummaryCard label="Inativos" value={inactiveEmployees.toString()} tone="slate" />
+          <SummaryCard label="Equipes" value={teamCount.toString()} tone="yellow" />
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[380px_1fr]">
-          <form
-            className="h-fit rounded-2xl border border-yellow-950/60 bg-zinc-950/80 p-5 shadow-2xl shadow-black/30"
-            onSubmit={handleSubmit}
-          >
-            <div className="border-b border-white/10 pb-4">
-              <h2 className="text-lg font-bold text-white">Novo funcionário</h2>
-              <p className="mt-1 text-sm text-slate-400">Cadastro rápido salvo no navegador para validação.</p>
-            </div>
+        <section className="rounded-2xl border border-yellow-950/60 bg-zinc-950/80 p-5 shadow-2xl shadow-black/30">
+          <div className="grid gap-4 lg:grid-cols-[1fr_180px]">
+            <label>
+              <span className="text-sm font-semibold text-slate-300">Buscar na planilha</span>
+              <input
+                className="mt-2 w-full rounded-xl border border-white/10 bg-black/50 px-3 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-yellow-500/60"
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="RE, funcionário, cargo, seguimento, equipe ou projeto..."
+                value={search}
+              />
+            </label>
 
-            <div className="mt-4 space-y-4">
-              <label className="block">
-                <span className="text-sm font-semibold text-slate-300">Nome</span>
-                <input
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-black/50 px-3 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-yellow-500/60"
-                  onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))}
-                  placeholder="Ex: Maria Santos"
-                  value={form.nome}
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-sm font-semibold text-slate-300">Cargo</span>
-                <input
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-black/50 px-3 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-yellow-500/60"
-                  onChange={(event) => setForm((current) => ({ ...current, cargo: event.target.value }))}
-                  placeholder="Ex: Técnico de Fibra"
-                  value={form.cargo}
-                />
-              </label>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block">
-                  <span className="text-sm font-semibold text-slate-300">Equipe</span>
-                  <select
-                    className="mt-2 w-full rounded-xl border border-white/10 bg-black/50 px-3 py-3 text-sm text-white outline-none transition focus:border-yellow-500/60"
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, equipe: event.target.value as EmployeeTeam }))
-                    }
-                    value={form.equipe}
-                  >
-                    {teams.map((team) => (
-                      <option key={team}>{team}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="block">
-                  <span className="text-sm font-semibold text-slate-300">Status</span>
-                  <select
-                    className="mt-2 w-full rounded-xl border border-white/10 bg-black/50 px-3 py-3 text-sm text-white outline-none transition focus:border-yellow-500/60"
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, status: event.target.value as EmployeeStatus }))
-                    }
-                    value={form.status}
-                  >
-                    {statuses.map((status) => (
-                      <option key={status}>{status}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <label className="block">
-                <span className="text-sm font-semibold text-slate-300">Data de admissão</span>
-                <input
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-black/50 px-3 py-3 text-sm text-white outline-none transition focus:border-yellow-500/60"
-                  onChange={(event) => setForm((current) => ({ ...current, dataAdmissao: event.target.value }))}
-                  type="date"
-                  value={form.dataAdmissao}
-                />
-              </label>
-
-              {feedback ? (
-                <p className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200">
-                  {feedback}
-                </p>
-              ) : null}
-
-              <button
-                className="w-full rounded-xl bg-yellow-500 px-4 py-3 text-sm font-extrabold text-black transition hover:bg-yellow-400"
-                type="submit"
+            <label>
+              <span className="text-sm font-semibold text-slate-300">Situação</span>
+              <select
+                className="mt-2 w-full rounded-xl border border-white/10 bg-black/50 px-3 py-3 text-sm text-white outline-none transition focus:border-yellow-500/60"
+                onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                value={statusFilter}
               >
-                Cadastrar funcionário
-              </button>
-            </div>
-          </form>
+                <option value="TODOS">Todos</option>
+                <option value="ATIVO">Ativo</option>
+                <option value="INATIVO">Inativo</option>
+              </select>
+            </label>
+          </div>
 
-          <div className="grid gap-4">
-            {groupedTeams.map(({ team, employees, activeCount }) => (
-              <div key={team} className="relative">
-                <EmployeeTeamCard employees={employees} onToggleStatus={handleToggleStatus} team={team} />
+          <p
+            className={`mt-4 rounded-xl border px-3 py-2 text-sm ${
+              source === "google-sheets"
+                ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
+                : "border-yellow-500/20 bg-yellow-500/10 text-yellow-200"
+            }`}
+          >
+            {loading ? "Carregando..." : feedback}
+          </p>
+        </section>
+
+        <section className="space-y-5">
+          {groupedTeams.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/10 bg-zinc-950/80 p-6 text-sm text-slate-400">
+              Nenhum funcionário encontrado com os filtros atuais.
+            </div>
+          ) : (
+            groupedTeams.map(({ team, employees: teamEmployees, activeCount }) => (
+              <div className="relative" key={team}>
+                <EmployeeTeamCard employees={teamEmployees} onToggleStatus={handleToggleStatus} team={team} />
                 <span className="absolute right-5 top-5 hidden rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300 md:inline-flex">
                   {activeCount} ativos
                 </span>
               </div>
-            ))}
-          </div>
+            ))
+          )}
         </section>
       </div>
     </ErpShell>
   );
 }
 
-function SummaryCard({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "green" | "slate" | "yellow" }) {
+function SummaryCard({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "green" | "slate" | "yellow";
+}) {
   const tones = {
     default: "text-white",
     green: "text-emerald-300",
@@ -205,4 +233,11 @@ function SummaryCard({ label, value, tone = "default" }: { label: string; value:
       <p className={`mt-3 text-3xl font-extrabold ${tones[tone]}`}>{value}</p>
     </article>
   );
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
