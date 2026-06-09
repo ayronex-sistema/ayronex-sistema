@@ -1,20 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { ErpShell } from "@/components/erp-shell";
 import { useErpData } from "@/hooks/use-erp-data";
 import { calcularResumoERP, formatCurrency } from "@/lib/calculator";
-import type { ProductionRecord } from "@/lib/types";
+import { companies, filterErpDataByCompany } from "@/lib/companies";
+import type { CompanyName, ErpData, ProductionRecord } from "@/lib/types";
 
 const weekLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const defaultDailyProduction = [28, 46, 38, 57, 49, 72];
 
 export default function DashboardPage() {
-  const { dataByCompany, empresaAtiva } = useErpData();
-  const resumo = calcularResumoERP(dataByCompany);
+  const { data } = useErpData();
+  const resumo = calcularResumoERP(data);
   const teamEntries = Object.entries(resumo.productionByTeam);
   const dailyProduction = buildDailySeries(resumo.productionMonth);
   const productionByType = buildProductionByType(resumo.productionMonth);
   const statusData = buildStatusData(resumo.productionMonth);
+  const companyOverview = buildCompanyOverview(data);
 
   return (
     <ErpShell active="dashboard">
@@ -31,7 +34,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className="mt-4 max-w-3xl text-sm text-slate-400">
-              Painel atualizado de {empresaAtiva}, com indicadores operacionais, produção, faturamento e status de lançamentos.
+              Painel consolidado de todas as empresas: TCI TELECOM, DCF TELECOM e NEW TELECOM.
             </p>
           </div>
 
@@ -49,6 +52,12 @@ export default function DashboardPage() {
             <DashboardMetric label="Custo total" value={formatCurrency(resumo.despesas)} />
             <DashboardMetric label="Lucro projetado" value={formatCurrency(resumo.saldoFinalPrevisto)} />
             <DashboardMetric label="Produção do mês" value={`${sumPoints(resumo.productionMonth)} pontos`} tone="green" />
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+            {companyOverview.map((company) => (
+              <CompanySummaryCard key={company.name} {...company} />
+            ))}
           </div>
 
           <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_0.85fr]">
@@ -77,13 +86,50 @@ export default function DashboardPage() {
         </section>
 
         <section className="grid gap-4 md:grid-cols-4">
-          <FeatureCard icon="⌕" title="Dados em tempo real" />
-          <FeatureCard icon="⌁" title="Indicadores de desempenho" />
-          <FeatureCard icon="↗" title="Tomada de decisão rápida" />
-          <FeatureCard icon="▣" title="Gestão por resultados" />
+          <FeatureCard href="/operacao" icon="⌕" title="Dados em tempo real" />
+          <FeatureCard href="/dashboard" icon="⌁" title="Indicadores de desempenho" />
+          <FeatureCard href="/financeiro" icon="↗" title="Tomada de decisão rápida" />
+          <FeatureCard href="/funcionarios" icon="▣" title="Gestão por resultados" />
         </section>
       </section>
     </ErpShell>
+  );
+}
+
+function CompanySummaryCard({
+  name,
+  faturamento,
+  despesas,
+  saldo,
+  producao,
+}: {
+  name: CompanyName;
+  faturamento: number;
+  despesas: number;
+  saldo: number;
+  producao: number;
+}) {
+  return (
+    <article className="rounded-2xl border border-yellow-950/50 bg-black/30 p-4">
+      <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-yellow-500">{name}</p>
+      <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <MiniValue label="Produção" value={String(producao)} />
+        <MiniValue label="Faturamento" value={formatCurrency(faturamento)} />
+        <MiniValue label="Despesas" value={formatCurrency(despesas)} />
+        <MiniValue label="Saldo previsto" value={formatCurrency(saldo)} tone={saldo >= 0 ? "positive" : "negative"} />
+      </div>
+    </article>
+  );
+}
+
+function MiniValue({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "positive" | "negative" }) {
+  const toneClass = tone === "positive" ? "text-emerald-300" : tone === "negative" ? "text-red-300" : "text-white";
+
+  return (
+    <div>
+      <p className="text-[11px] text-slate-500">{label}</p>
+      <p className={`mt-1 font-bold ${toneClass}`}>{value}</p>
+    </div>
   );
 }
 
@@ -201,12 +247,15 @@ function DonutChart({ items, emptyLabel }: { items: ChartItem[]; emptyLabel: str
   );
 }
 
-function FeatureCard({ icon, title }: { icon: string; title: string }) {
+function FeatureCard({ href, icon, title }: { href: string; icon: string; title: string }) {
   return (
-    <article className="rounded-2xl border border-yellow-950/50 bg-zinc-950 p-5 text-center">
+    <Link
+      className="group rounded-2xl border border-yellow-950/50 bg-zinc-950 p-5 text-center transition hover:-translate-y-1 hover:border-yellow-500/60 hover:bg-yellow-500/10 focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
+      href={href}
+    >
       <div className="mx-auto grid size-12 place-items-center rounded-full border border-white/10 text-2xl text-yellow-400">{icon}</div>
-      <p className="mt-4 text-sm font-bold text-slate-200">{title}</p>
-    </article>
+      <p className="mt-4 text-sm font-bold text-slate-200 group-hover:text-yellow-200">{title}</p>
+    </Link>
   );
 }
 
@@ -269,4 +318,19 @@ function getProductionType(record: ProductionRecord) {
 
 function sumPoints(records: ProductionRecord[]) {
   return records.reduce((sum, record) => sum + record.points, 0).toLocaleString("pt-BR");
+}
+
+function buildCompanyOverview(data: ErpData) {
+  return companies.map((company) => {
+    const companyData = filterErpDataByCompany(data, company);
+    const resumo = calcularResumoERP(companyData);
+
+    return {
+      name: company,
+      faturamento: resumo.faturamentoEstimado,
+      despesas: resumo.despesas,
+      saldo: resumo.saldoFinalPrevisto,
+      producao: resumo.productionMonth.length,
+    };
+  });
 }
