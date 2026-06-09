@@ -1,0 +1,33 @@
+import type { CompanyName, ErpData } from "./types";
+
+export const companies: CompanyName[] = ["TCI TELECOM", "DCF TELECOM", "NEW TELECOM"];
+
+export const DEFAULT_COMPANY: CompanyName = "NEW TELECOM";
+
+export const COMPANY_STORAGE_KEY = "ayronex-active-company";
+
+export function isCompanyName(value: unknown): value is CompanyName {
+  return typeof value === "string" && companies.includes(value as CompanyName);
+}
+
+export function getRecordCompany(record: { empresa?: CompanyName | string }) {
+  if (record.empresa === "CI TELECOM") {
+    return "TCI TELECOM";
+  }
+
+  if (record.empresa === "TIM") {
+    return "NEW TELECOM";
+  }
+
+  return isCompanyName(record.empresa) ? record.empresa : DEFAULT_COMPANY;
+}
+
+export function filterErpDataByCompany(data: ErpData, empresa: CompanyName): ErpData {
+  return {
+    ...data,
+    production: data.production.filter((record) => getRecordCompany(record) === empresa),
+    finance: data.finance.filter((record) => getRecordCompany(record) === empresa),
+    vr: data.vr.filter((record) => getRecordCompany(record) === empresa),
+    employees: data.employees.filter((record) => getRecordCompany(record) === empresa),
+  };
+}

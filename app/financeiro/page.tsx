@@ -8,7 +8,7 @@ import { calcularVR, calculateFinanceTotals, formatCurrency } from "@/lib/calcul
 import type { FinanceEntry, VrRecord } from "@/lib/types";
 
 export default function FinanceiroPage() {
-  const { data, addFinanceEntry, updateFinanceEntry, addVrRecord } = useErpData();
+  const { dataByCompany, empresaAtiva, addFinanceEntry, updateFinanceEntry, addVrRecord } = useErpData();
   const [entryForm, setEntryForm] = useState({
     description: "",
     type: "Entrada" as FinanceEntry["type"],
@@ -17,7 +17,7 @@ export default function FinanceiroPage() {
     paid: true,
   });
   const [vrForm, setVrForm] = useState({ equipe: "", diasTrabalhados: "0", sabados: "0" });
-  const totals = useMemo(() => calculateFinanceTotals(data.finance), [data.finance]);
+  const totals = useMemo(() => calculateFinanceTotals(dataByCompany.finance), [dataByCompany.finance]);
 
   const handleAddEntry = () => {
     const amount = Number(entryForm.amount);
@@ -28,6 +28,7 @@ export default function FinanceiroPage() {
 
     addFinanceEntry({
       id: createId("fin"),
+      empresa: empresaAtiva,
       date: new Date().toISOString().slice(0, 10),
       description: entryForm.description,
       type: entryForm.type,
@@ -45,6 +46,7 @@ export default function FinanceiroPage() {
 
     const record: VrRecord = {
       id: createId("vr"),
+      empresa: empresaAtiva,
       equipe: vrForm.equipe,
       diasTrabalhados: Number(vrForm.diasTrabalhados) || 0,
       sabados: Number(vrForm.sabados) || 0,
@@ -119,12 +121,12 @@ export default function FinanceiroPage() {
 
         <div className="grid gap-4 xl:grid-cols-2">
           <LedgerTable
-            entries={data.finance.filter((entry) => entry.type === "Entrada")}
+            entries={dataByCompany.finance.filter((entry) => entry.type === "Entrada")}
             onTogglePaid={updateFinanceEntry}
             title="Entradas"
           />
           <LedgerTable
-            entries={data.finance.filter((entry) => entry.type === "Saída")}
+            entries={dataByCompany.finance.filter((entry) => entry.type === "Saída")}
             onTogglePaid={updateFinanceEntry}
             title="Saídas e Contas a Pagar"
           />
@@ -169,7 +171,7 @@ export default function FinanceiroPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
-                {data.vr.map((record) => (
+                {dataByCompany.vr.map((record) => (
                   <tr key={record.id}>
                     <td className="px-4 py-3 font-semibold text-slate-100">{record.equipe}</td>
                     <td className="px-4 py-3 text-slate-400">{record.diasTrabalhados}</td>

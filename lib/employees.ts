@@ -1,8 +1,35 @@
-import type { Employee, EmployeeStatus } from "./types";
+import { DEFAULT_COMPANY } from "./companies";
+import type { CompanyName, Employee, EmployeeStatus } from "./types";
 
-export const EMPLOYEE_SHEET_ID = "1yjjLP0A3EhmA5XAnyP4Wu8F1uX9K0tV4vPKd58Spv1E";
-export const EMPLOYEE_SHEET_GID = "1028005950";
-export const EMPLOYEE_SHEET_NAME = "CADASTRO FUNCIONARIOS-2026";
+export const EMPLOYEE_SHEET_ID = "1rvbh3SrlgUJOQEHJcB4sIfiLJ4DXSRNOrgoJFX6Q_oY";
+export const EMPLOYEE_SHEET_GID = "0";
+export const EMPLOYEE_SHEET_NAME = "DB_FUNCIONARIOS";
+
+export const employeeSheetSources = [
+  {
+    label: "AYRONEX - BASE CENTRAL / DB_FUNCIONARIOS",
+    spreadsheetId: "1rvbh3SrlgUJOQEHJcB4sIfiLJ4DXSRNOrgoJFX6Q_oY",
+    gid: "0",
+  },
+  {
+    label: "CADASTRO FUNCIONARIOS-ATIVO-INATIVO / CADASTRO FUNCIONARIOS-2026",
+    spreadsheetId: "1yjjLP0A3EhmA5XAnyP4Wu8F1uX9K0tV4vPKd58Spv1E",
+    gid: "1028005950",
+    empresa: "NEW TELECOM" as CompanyName,
+  },
+  {
+    label: "planilha TIM NOVA_AJUSTADA / COLABORADORES_NORMALIZADO",
+    spreadsheetId: "195NziYEEIIO0yJtuEPJ5H5gznv3RL32ylaLrMZCUEuI",
+    gid: "1369927448",
+    empresa: "NEW TELECOM" as CompanyName,
+  },
+  {
+    label: "Base Sistema AYRONEX - 34New Telecom / FUNCIONARIOS",
+    spreadsheetId: "16sBmLSoxpuCCtfP5eAQ3f1tMCDu6y4uPfnuRPZEWtOE",
+    gid: "1868891265",
+    empresa: "NEW TELECOM" as CompanyName,
+  },
+] as const;
 
 export const employeeColumns = [
   { key: "re", label: "RE" },
@@ -40,12 +67,173 @@ export const employeeColumns = [
 
 export type EmployeeColumnKey = (typeof employeeColumns)[number]["key"];
 
-export function parseEmployeeSheetRows(rows: string[][]): Employee[] {
+export function parseEmployeeSheetRows(rows: string[][], sourceCompany?: CompanyName): Employee[] {
+  const header = rows[0] ?? [];
+  const isCentralDatabase = normalizeHeader(header[0]) === "EMPRESA";
+  const isTimSheet = normalizeHeader(header[0]) === "N. CPF";
+  const isNewTelecomSheet = normalizeHeader(header[0]) === "ID_FUNCIONARIO";
+
+  if (isCentralDatabase) {
+    return rows
+      .slice(1)
+      .filter((row) => row.some(Boolean))
+      .map((row, index) => normalizeCentralEmployeeRow(row, index))
+      .filter((employee) => employee.funcionario);
+  }
+
+  if (isTimSheet) {
+    return rows
+      .slice(1)
+      .filter((row) => row.some(Boolean))
+      .map((row, index) => normalizeTimEmployeeRow(row, index, sourceCompany ?? "NEW TELECOM"))
+      .filter((employee) => employee.funcionario);
+  }
+
+  if (isNewTelecomSheet) {
+    return rows
+      .slice(1)
+      .filter((row) => row.some(Boolean))
+      .map((row, index) => normalizeEmployee(mapNewTelecomSoftrRow(row, sourceCompany ?? "NEW TELECOM"), index))
+      .filter((employee) => employee.funcionario);
+  }
+
   return rows
     .slice(1)
     .filter((row) => row.some(Boolean))
     .map((row, index) => normalizeEmployeeRow(row, index))
+    .map((employee) => (sourceCompany ? { ...employee, empresa: sourceCompany } : employee))
     .filter((employee) => employee.funcionario);
+}
+
+function normalizeCentralEmployeeRow(row: string[], index: number): Employee {
+  const empresa = normalizeCompany(row[0]);
+  const origem = clean(row[1]);
+  const columns = row.slice(2);
+
+  if (origem.toUpperCase().includes("CADASTRO FUNCIONARIOS")) {
+    return normalizeEmployee({ ...mapCadastroFuncionariosRow(columns), empresa }, index);
+  }
+
+  if (clean(row[0]).toUpperCase() === "TIM") {
+    return normalizeTimCentralRow(columns, index, "NEW TELECOM");
+  }
+
+  return normalizeEmployee(
+    {
+      empresa,
+      id: `${empresa.toLowerCase().replace(/\s+/g, "-")}-${index + 1}`,
+      re: String(index + 1),
+      situacao: "ATIVO",
+      funcionario: columns[1],
+      cargo: columns[10],
+      seguimento: origem,
+      equipe: columns[10] || empresa,
+      projeto: empresa === "DCF TELECOM" || empresa === "TCI TELECOM" ? "VIVO" : empresa,
+      salario: columns[5],
+      admissao: columns[9],
+      dataAdmissao: columns[9],
+      cpf: columns[8],
+      rg: columns[7],
+      dataNascimento: columns[6],
+      enderecoCompleto: columns[3],
+      nrs1035: columns[15],
+      possuiNrs: columns[15],
+      nrsVencido: columns[16],
+    },
+    index,
+  );
+}
+
+function normalizeTimCentralRow(row: string[], index: number, empresa: CompanyName): Employee {
+  return normalizeEmployee(
+    {
+      empresa,
+      id: `tim-${clean(row[0]) || index + 1}`,
+      re: clean(row[0]) || String(index + 1),
+      situacao: "ATIVO",
+      funcionario: row[3],
+      cargo: row[4],
+      seguimento: row[2],
+      equipe: row[2] || row[12] || "TIM",
+      projeto: "TIM",
+      carro: row[8],
+      placa: row[7],
+      admissao: row[5],
+      dataAdmissao: row[5],
+      eSocial: row[0],
+      cpf: row[14],
+      rg: row[15],
+      dataNascimento: row[13],
+      enderecoCompleto: row[16],
+    },
+    index,
+  );
+}
+
+function normalizeTimEmployeeRow(row: string[], index: number, empresa: CompanyName): Employee {
+  return normalizeEmployee(
+    {
+      empresa,
+      id: `tim-${clean(row[4]) || clean(row[9]) || index + 1}`,
+      re: row[4] || String(index + 1),
+      situacao: "ATIVO",
+      funcionario: row[5],
+      cargo: row[6],
+      seguimento: row[3],
+      equipe: row[7] || "TIM",
+      projeto: "TIM",
+      carro: row[14],
+      placa: row[13],
+      admissao: row[1],
+      dataAdmissao: row[1],
+      cpf: row[9] || row[0],
+      rg: row[10],
+      nomeMae: row[11],
+      dataNascimento: row[8],
+      nrs1035: row[23],
+      possuiNrs: row[24],
+    },
+    index,
+  );
+}
+
+function mapNewTelecomSoftrRow(row: string[], empresa: CompanyName): Partial<Employee> {
+  return {
+    empresa,
+    id: row[0],
+    re: row[1],
+    situacao: normalizeStatus(row[2]),
+    funcionario: row[3],
+    cargo: row[4],
+    seguimento: row[5],
+    equipe: row[6],
+    projeto: row[7],
+    vrDia: row[8],
+    vt: row[9],
+    salario: row[10],
+    clt: row[11],
+    carro: row[12],
+    placa: row[13],
+    admissao: row[14],
+    dataAdmissao: row[14],
+    vencimentoContrato45: row[15],
+    vencimentoContrato90: row[16],
+    eSocial: row[17],
+    cracha: row[18],
+    cartaoVrVa: row[19],
+    cpf: row[20],
+    rg: row[21],
+    nomeMae: row[22],
+    nomePai: row[23],
+    dataNascimento: row[24],
+    enderecoCompleto: row[25],
+    nrs1035: row[26],
+    vencimentoNrs: row[27],
+    possuiNrs: row[28],
+    nrsVencido: row[29],
+    feriasVencidas: row[30],
+    podeTirarFerias: row[31],
+  };
 }
 
 export function normalizeEmployee(employee: Partial<Employee>, index = 0): Employee {
@@ -55,6 +243,7 @@ export function normalizeEmployee(employee: Partial<Employee>, index = 0): Emplo
 
   return {
     id: clean(employee.id) || `emp-${clean(employee.re) || index + 1}`,
+    empresa: normalizeCompany(employee.empresa),
     re: clean(employee.re),
     situacao,
     nome: funcionario,
@@ -92,49 +281,75 @@ export function normalizeEmployee(employee: Partial<Employee>, index = 0): Emplo
 }
 
 function normalizeEmployeeRow(row: string[], index: number): Employee {
-  return normalizeEmployee(
-    {
-      re: row[0],
-      situacao: normalizeStatus(row[1]),
-      funcionario: row[2],
-      cargo: row[3],
-      seguimento: row[4],
-      equipe: row[5],
-      projeto: row[6],
-      vrDia: row[7],
-      vt: row[8],
-      salario: row[9],
-      clt: row[10],
-      carro: row[11],
-      placa: row[12],
-      admissao: row[13],
-      dataAdmissao: row[13],
-      vencimentoContrato45: row[14],
-      vencimentoContrato90: row[15],
-      eSocial: row[16],
-      cracha: row[17],
-      cartaoVrVa: row[18],
-      cpf: row[19],
-      rg: row[20],
-      nomeMae: row[21],
-      nomePai: row[22],
-      dataNascimento: row[23],
-      enderecoCompleto: row[24],
-      nrs1035: row[25],
-      vencimentoNrs: row[26],
-      possuiNrs: row[27],
-      nrsVencido: row[28],
-      feriasVencidas: row[29],
-      podeTirarFerias: row[30],
-    },
-    index,
-  );
+  return normalizeEmployee(mapCadastroFuncionariosRow(row), index);
+}
+
+function mapCadastroFuncionariosRow(row: string[]): Partial<Employee> {
+  return {
+    re: row[0],
+    situacao: normalizeStatus(row[1]),
+    funcionario: row[2],
+    cargo: row[3],
+    seguimento: row[4],
+    equipe: row[5],
+    projeto: row[6],
+    vrDia: row[7],
+    vt: row[8],
+    salario: row[9],
+    clt: row[10],
+    carro: row[11],
+    placa: row[12],
+    admissao: row[13],
+    dataAdmissao: row[13],
+    vencimentoContrato45: row[14],
+    vencimentoContrato90: row[15],
+    eSocial: row[16],
+    cracha: row[17],
+    cartaoVrVa: row[18],
+    cpf: row[19],
+    rg: row[20],
+    nomeMae: row[21],
+    nomePai: row[22],
+    dataNascimento: row[23],
+    enderecoCompleto: row[24],
+    nrs1035: row[25],
+    vencimentoNrs: row[26],
+    possuiNrs: row[27],
+    nrsVencido: row[28],
+    feriasVencidas: row[29],
+    podeTirarFerias: row[30],
+  };
 }
 
 function normalizeStatus(value?: string): EmployeeStatus {
   return clean(value).toUpperCase() === "INATIVO" ? "INATIVO" : "ATIVO";
 }
 
+function normalizeCompany(value?: string): CompanyName {
+  const company = clean(value).toUpperCase();
+
+  if (company === "NEW TELECOM" || company === "TCI TELECOM" || company === "DCF TELECOM") {
+    return company;
+  }
+
+  if (company === "CI TELECOM") {
+    return "TCI TELECOM";
+  }
+
+  if (company === "TIM") {
+    return "NEW TELECOM";
+  }
+
+  return DEFAULT_COMPANY;
+}
+
 function clean(value?: string) {
   return String(value ?? "").trim();
+}
+
+function normalizeHeader(value?: string) {
+  return clean(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
 }

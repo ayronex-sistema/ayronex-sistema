@@ -28,7 +28,7 @@ const yesNoFields = new Set<EmployeeColumnKey>([
 ]);
 
 export default function FuncionariosPage() {
-  const { data, addEmployee, updateEmployee } = useErpData();
+  const { data, empresaAtiva, addEmployee, updateEmployee } = useErpData();
   const [sheetEmployees, setSheetEmployees] = useState<Employee[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState("Carregando funcionários do Google Sheets...");
@@ -44,7 +44,11 @@ export default function FuncionariosPage() {
     [data.employees],
   );
 
-  const employees = sheetEmployees ?? fallbackEmployees;
+  const employees = useMemo(() => {
+    const sourceEmployees = sheetEmployees ?? fallbackEmployees;
+
+    return sourceEmployees.filter((employee) => employee.empresa === empresaAtiva);
+  }, [empresaAtiva, fallbackEmployees, sheetEmployees]);
 
   useEffect(() => {
     let active = true;
@@ -140,7 +144,7 @@ export default function FuncionariosPage() {
     setEmployeeForm((current) => ({ ...current, [key]: value }));
   }
 
-  function handleRegisterEmployee(event: React.FormEvent<HTMLFormElement>) {
+  async function handleRegisterEmployee(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!employeeForm.re.trim() || !employeeForm.funcionario.trim() || !employeeForm.equipe.trim()) {
@@ -152,6 +156,7 @@ export default function FuncionariosPage() {
       {
         id: createId("emp"),
         ...employeeForm,
+        empresa: empresaAtiva,
         situacao: employeeForm.situacao as EmployeeStatus,
         nome: employeeForm.funcionario,
         dataAdmissao: employeeForm.admissao,
@@ -162,9 +167,26 @@ export default function FuncionariosPage() {
     addEmployee(newEmployee);
     setSheetEmployees((current) => [newEmployee, ...(current ?? [])]);
     setEmployeeForm(createEmptyEmployeeForm());
-    setFormFeedback("Funcionário cadastrado na tela e salvo localmente neste navegador.");
+    setFormFeedback(`Funcionário cadastrado em ${empresaAtiva}. Sincronizando...`);
     setSearch("");
     setStatusFilter("TODOS");
+
+    try {
+      const response = await fetch("/api/funcionarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEmployee),
+      });
+      const payload = (await response.json().catch(() => null)) as { message?: string; persisted?: boolean } | null;
+
+      setFormFeedback(
+        payload?.persisted
+          ? `Funcionário cadastrado em ${empresaAtiva} e enviado ao Google Sheets.`
+          : (payload?.message ?? `Funcionário cadastrado em ${empresaAtiva} e salvo localmente neste navegador.`),
+      );
+    } catch {
+      setFormFeedback(`Funcionário cadastrado em ${empresaAtiva}, mas a sincronização com Sheets falhou.`);
+    }
   }
 
   return (
@@ -202,7 +224,7 @@ export default function FuncionariosPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-yellow-500">Cadastrar</p>
             <h2 className="mt-2 text-xl font-bold text-white">Novo funcionário</h2>
             <p className="mt-1 text-sm text-slate-400">
-              Formulário completo com os mesmos campos e ordem da planilha de cadastro.
+              Formulário completo com os mesmos campos e ordem da planilha de cadastro para {empresaAtiva}.
             </p>
           </div>
 

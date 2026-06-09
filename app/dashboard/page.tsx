@@ -6,8 +6,8 @@ import { calcularResumoERP, formatCurrency } from "@/lib/calculator";
 import { useErpData } from "@/hooks/use-erp-data";
 
 export default function DashboardPage() {
-  const { data } = useErpData();
-  const resumo = calcularResumoERP(data);
+  const { dataByCompany, empresaAtiva } = useErpData();
+  const resumo = calcularResumoERP(dataByCompany);
   const teams = Object.entries(resumo.productionByTeam);
 
   return (
@@ -17,7 +17,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">Dashboard Gerencial</h1>
             <p className="mt-2 text-slate-400">
-              Controle operacional e financeiro em tempo real para a operação Ayronex.
+              Controle operacional e financeiro em tempo real para {empresaAtiva}.
             </p>
           </div>
           <p className="text-sm text-slate-400">

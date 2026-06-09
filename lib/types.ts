@@ -1,5 +1,7 @@
 export type ProductionStatus = "OK" | "Pendente" | "Refazer";
 
+export type CompanyName = "TCI TELECOM" | "DCF TELECOM" | "NEW TELECOM";
+
 export type ConectaCode = {
   id: string;
   description: string;
@@ -10,6 +12,7 @@ export type ConectaCode = {
 
 export type ProductionRecord = {
   id: string;
+  empresa: CompanyName;
   date: string;
   sp: string;
   cabo: string;
@@ -27,6 +30,7 @@ export type ProductionRecord = {
 
 export type FinanceEntry = {
   id: string;
+  empresa: CompanyName;
   date: string;
   description: string;
   type: "Entrada" | "Saída";
@@ -37,6 +41,7 @@ export type FinanceEntry = {
 
 export type VrRecord = {
   id: string;
+  empresa: CompanyName;
   equipe: string;
   diasTrabalhados: number;
   sabados: number;
@@ -49,6 +54,7 @@ export type EmployeeTeam = string;
 
 export type Employee = {
   id: string;
+  empresa: CompanyName;
   re: string;
   situacao: EmployeeStatus;
   nome: string;

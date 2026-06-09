@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { COMPANY_STORAGE_KEY, DEFAULT_COMPANY, filterErpDataByCompany, isCompanyName } from "@/lib/companies";
 import { defaultErpData } from "@/lib/defaults";
-import type { ConectaCode, Employee, ErpData, FinanceEntry, ProductionRecord, VrRecord } from "@/lib/types";
+import type { CompanyName, ConectaCode, Employee, ErpData, FinanceEntry, ProductionRecord, VrRecord } from "@/lib/types";
 
 const STORAGE_KEY = "ayronex-erp-v1";
+const COMPANY_CHANGE_EVENT = "ayronex-company-change";
 
 export function useErpData() {
   const [data, setData] = useState<ErpData>(() => {
@@ -15,12 +17,48 @@ export function useErpData() {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     return stored ? { ...defaultErpData, ...JSON.parse(stored) } : defaultErpData;
   });
+  const [empresaAtiva, setEmpresaAtivaState] = useState<CompanyName>(() => {
+    if (typeof window === "undefined") {
+      return DEFAULT_COMPANY;
+    }
+
+    const stored = window.localStorage.getItem(COMPANY_STORAGE_KEY);
+    return isCompanyName(stored) ? stored : DEFAULT_COMPANY;
+  });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
   }, [data]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const syncCompany = () => {
+      const stored = window.localStorage.getItem(COMPANY_STORAGE_KEY);
+      setEmpresaAtivaState(isCompanyName(stored) ? stored : DEFAULT_COMPANY);
+    };
+
+    window.addEventListener("storage", syncCompany);
+    window.addEventListener(COMPANY_CHANGE_EVENT, syncCompany);
+
+    return () => {
+      window.removeEventListener("storage", syncCompany);
+      window.removeEventListener(COMPANY_CHANGE_EVENT, syncCompany);
+    };
+  }, []);
+
+  const setEmpresaAtiva = useCallback((empresa: CompanyName) => {
+    setEmpresaAtivaState(empresa);
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(COMPANY_STORAGE_KEY, empresa);
+      window.dispatchEvent(new CustomEvent(COMPANY_CHANGE_EVENT));
+    }
+  }, []);
 
   const addProduction = useCallback((record: ProductionRecord) => {
     setData((current) => ({ ...current, production: [record, ...current.production] }));
@@ -66,6 +104,9 @@ export function useErpData() {
   return useMemo(
     () => ({
       data,
+      dataByCompany: filterErpDataByCompany(data, empresaAtiva),
+      empresaAtiva,
+      setEmpresaAtiva,
       addProduction,
       updateProduction,
       addConectaCode,
@@ -82,6 +123,8 @@ export function useErpData() {
       addProduction,
       addVrRecord,
       data,
+      empresaAtiva,
+      setEmpresaAtiva,
       updateEmployee,
       updateFinanceEntry,
       updateProduction,

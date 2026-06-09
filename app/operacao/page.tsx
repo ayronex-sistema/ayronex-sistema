@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ErpShell } from "@/components/erp-shell";
 import { createId, useErpData } from "@/hooks/use-erp-data";
+import { findBestConectaCode } from "@/utils/conecta-matcher";
 import { parseOperationMessage, type ParsedOperationMessage } from "@/utils/parser";
 import type { ConectaCode, ProductionRecord, ProductionStatus } from "@/lib/types";
 
@@ -16,7 +17,7 @@ Materiais: 80m fibra, 2 conectores, 1 CTO`;
 const statusOptions: ProductionStatus[] = ["OK", "Pendente", "Refazer"];
 
 export default function OperacaoPage() {
-  const { data, addConectaCode, addProduction, updateProduction } = useErpData();
+  const { data, dataByCompany, empresaAtiva, addConectaCode, addProduction, updateProduction } = useErpData();
   const [message, setMessage] = useState(exampleMessage);
   const [parsed, setParsed] = useState<ParsedOperationMessage>(() => parseOperationMessage(exampleMessage));
   const [selectedCodeId, setSelectedCodeId] = useState(data.conectaCodes[0]?.id ?? "");
@@ -26,16 +27,23 @@ export default function OperacaoPage() {
   const [newCode, setNewCode] = useState({ description: "", code: "", points: "1", value: "0" });
 
   const selectedCode = data.conectaCodes.find((code) => code.id === selectedCodeId) ?? data.conectaCodes[0];
+  const suggestedCode = useMemo(() => findBestConectaCode(parsed, data.conectaCodes), [data.conectaCodes, parsed]);
   const preview = useMemo(() => JSON.stringify(parsed, null, 2), [parsed]);
 
   const handleParse = () => {
-    setParsed(parseOperationMessage(message));
+    const nextParsed = parseOperationMessage(message);
+    const matchedCode = findBestConectaCode(nextParsed, data.conectaCodes);
+
+    setParsed(nextParsed);
+    if (matchedCode) {
+      setSelectedCodeId(matchedCode.id);
+    }
     setFeedback(null);
   };
 
   const handleSaveProduction = async () => {
     const nextParsed = parseOperationMessage(message);
-    const code = selectedCode;
+    const code = selectedCode ?? findBestConectaCode(nextParsed, data.conectaCodes);
 
     if (!code) {
       setFeedback("Cadastre ou selecione um código Conecta antes de salvar.");
@@ -44,6 +52,7 @@ export default function OperacaoPage() {
 
     const record: ProductionRecord = {
       id: createId("prod"),
+      empresa: empresaAtiva,
       date: new Date().toISOString().slice(0, 10),
       sp: nextParsed.sp ?? "",
       cabo: nextParsed.cabo ?? "",
@@ -143,6 +152,16 @@ export default function OperacaoPage() {
               </label>
             </div>
 
+            {suggestedCode ? (
+              <p className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+                Sugestão automática Conecta: <strong>{suggestedCode.code}</strong> — {suggestedCode.description}
+              </p>
+            ) : (
+              <p className="mt-3 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3 text-sm text-yellow-200">
+                Nenhum código Conecta sugerido ainda. Cadastre palavras-chave na descrição do código.
+              </p>
+            )}
+
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <button className="rounded-lg bg-white/10 px-4 py-3 text-sm font-bold" onClick={handleParse} type="button">
                 Gerar JSON
@@ -239,7 +258,7 @@ export default function OperacaoPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
-                {data.production.map((record) => (
+                {dataByCompany.production.map((record) => (
                   <tr key={record.id}>
                     <td className="px-4 py-3 font-bold text-yellow-300">{record.sp}</td>
                     <td className="px-4 py-3">{record.equipe}</td>

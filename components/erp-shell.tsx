@@ -1,5 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useErpData } from "@/hooks/use-erp-data";
+import { companies } from "@/lib/companies";
+import type { CompanyName } from "@/lib/types";
 
 type ErpShellProps = {
   active: "dashboard" | "operacao" | "funcionarios" | "financeiro";
@@ -14,6 +19,8 @@ const navigation = [
 ] as const;
 
 export function ErpShell({ active, children }: ErpShellProps) {
+  const { empresaAtiva, setEmpresaAtiva } = useErpData();
+
   return (
     <main className="min-h-screen bg-black text-slate-50">
       <div className="flex min-h-screen">
@@ -29,6 +36,8 @@ export function ErpShell({ active, children }: ErpShellProps) {
           </div>
 
           <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+            <CompanySelector empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
+
             {navigation.map((item) => (
               <Link
                 className={`rounded-lg px-3 py-3 text-sm font-semibold transition ${
@@ -79,9 +88,13 @@ export function ErpShell({ active, children }: ErpShellProps) {
               ))}
             </nav>
 
-            <div className="hidden text-right md:block">
-              <p className="text-sm font-bold">Administrador</p>
-              <p className="mt-1 text-xs text-slate-400">admin@ayronex.com</p>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+              <CompanySelector compact empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
+
+              <div className="hidden text-right md:block">
+                <p className="text-sm font-bold">Administrador</p>
+                <p className="mt-1 text-xs text-slate-400">admin@ayronex.com</p>
+              </div>
             </div>
           </header>
 
@@ -89,6 +102,36 @@ export function ErpShell({ active, children }: ErpShellProps) {
         </section>
       </div>
     </main>
+  );
+}
+
+function CompanySelector({
+  compact = false,
+  empresaAtiva,
+  onChange,
+}: {
+  compact?: boolean;
+  empresaAtiva: CompanyName;
+  onChange: (empresa: CompanyName) => void;
+}) {
+  return (
+    <label className={compact ? "block md:min-w-52" : "mb-3 block rounded-xl border border-yellow-950/70 bg-black/30 p-3"}>
+      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-yellow-500">Empresa ativa</span>
+      <div className="relative mt-2">
+        <select
+          className="w-full appearance-none rounded-lg border border-yellow-500/20 bg-black px-3 py-2.5 pr-9 text-sm font-bold text-white outline-none transition focus:border-yellow-400"
+          onChange={(event) => onChange(event.target.value as CompanyName)}
+          value={empresaAtiva}
+        >
+          {companies.map((company) => (
+            <option key={company} value={company}>
+              {company}
+            </option>
+          ))}
+        </select>
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-yellow-400">⌄</span>
+      </div>
+    </label>
   );
 }
 
