@@ -2,13 +2,14 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 type ErpShellProps = {
-  active: "dashboard" | "operacao" | "financeiro";
+  active: "dashboard" | "operacao" | "funcionarios" | "financeiro";
   children: ReactNode;
 };
 
 const navigation = [
   { key: "dashboard", label: "Dashboard", href: "/dashboard" },
   { key: "operacao", label: "Operação", href: "/operacao" },
+  { key: "funcionarios", label: "Funcionários", href: "/funcionarios" },
   { key: "financeiro", label: "Financeiro", href: "/financeiro" },
 ] as const;
 
@@ -62,7 +63,7 @@ export function ErpShell({ active, children }: ErpShellProps) {
               </div>
             </div>
 
-            <nav className="flex gap-2 lg:hidden">
+            <nav className="flex flex-wrap gap-2 lg:hidden">
               {navigation.map((item) => (
                 <Link
                   className={`rounded-lg px-3 py-2 text-xs font-semibold ${

@@ -43,9 +43,23 @@ export type VrRecord = {
   amount: number;
 };
 
+export type EmployeeStatus = "Ativo" | "Inativo";
+
+export type EmployeeTeam = "Operação" | "Financeiro" | "Vendas" | "Atendimento";
+
+export type Employee = {
+  id: string;
+  nome: string;
+  cargo: string;
+  equipe: EmployeeTeam;
+  status: EmployeeStatus;
+  dataAdmissao: string;
+};
+
 export type ErpData = {
   conectaCodes: ConectaCode[];
   production: ProductionRecord[];
   finance: FinanceEntry[];
   vr: VrRecord[];
+  employees: Employee[];
 };

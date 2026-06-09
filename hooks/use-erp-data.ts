@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { defaultErpData } from "@/lib/defaults";
-import type { ConectaCode, ErpData, FinanceEntry, ProductionRecord, VrRecord } from "@/lib/types";
+import type { ConectaCode, Employee, ErpData, FinanceEntry, ProductionRecord, VrRecord } from "@/lib/types";
 
 const STORAGE_KEY = "ayronex-erp-v1";
 
@@ -52,6 +52,17 @@ export function useErpData() {
     setData((current) => ({ ...current, vr: [record, ...current.vr] }));
   }, []);
 
+  const addEmployee = useCallback((employee: Employee) => {
+    setData((current) => ({ ...current, employees: [employee, ...current.employees] }));
+  }, []);
+
+  const updateEmployee = useCallback((employee: Employee) => {
+    setData((current) => ({
+      ...current,
+      employees: current.employees.map((item) => (item.id === employee.id ? employee : item)),
+    }));
+  }, []);
+
   return useMemo(
     () => ({
       data,
@@ -61,8 +72,20 @@ export function useErpData() {
       addFinanceEntry,
       updateFinanceEntry,
       addVrRecord,
+      addEmployee,
+      updateEmployee,
     }),
-    [addConectaCode, addFinanceEntry, addProduction, addVrRecord, data, updateFinanceEntry, updateProduction],
+    [
+      addConectaCode,
+      addEmployee,
+      addFinanceEntry,
+      addProduction,
+      addVrRecord,
+      data,
+      updateEmployee,
+      updateFinanceEntry,
+      updateProduction,
+    ],
   );
 }
 
