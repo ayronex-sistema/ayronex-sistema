@@ -38,6 +38,8 @@ export const employeeColumns = [
   { key: "podeTirarFerias", label: "Pode tirar férias?" },
 ] as const;
 
+export type EmployeeColumnKey = (typeof employeeColumns)[number]["key"];
+
 export function parseEmployeeSheetRows(rows: string[][]): Employee[] {
   return rows
     .slice(1)
