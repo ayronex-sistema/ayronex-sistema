@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { EmployeeTeamCard } from "@/components/employee-team-card";
 import { ErpShell } from "@/components/erp-shell";
+import { ModuleSpreadsheetActions, type SpreadsheetRow } from "@/components/module-spreadsheet-actions";
 import { createId, useErpData } from "@/hooks/use-erp-data";
 import { EMPLOYEE_SHEET_NAME, employeeColumns, normalizeEmployee, type EmployeeColumnKey } from "@/lib/employees";
 import type { Employee, EmployeeStatus } from "@/lib/types";
@@ -144,6 +145,64 @@ export default function FuncionariosPage() {
     setEmployeeForm((current) => ({ ...current, [key]: value }));
   }
 
+  function handleImportEmployees(rows: SpreadsheetRow[]) {
+    const importedEmployees = rows
+      .map((row, index) =>
+        normalizeEmployee(
+          {
+            id: getImportedValue(row, ["id"]) || createId("emp-import"),
+            empresa: empresaAtiva,
+            re: getImportedValue(row, ["re", "RE"]),
+            situacao: getImportedValue(row, ["situacao", "Situação", "Situacao", "status"]) as EmployeeStatus,
+            funcionario: getImportedValue(row, ["funcionario", "Funcionário", "Funcionario", "nome", "Nome"]),
+            cargo: getImportedValue(row, ["cargo", "Cargo"]),
+            seguimento: getImportedValue(row, ["seguimento", "Seguimento", "segmento", "Segmento"]),
+            equipe: getImportedValue(row, ["equipe", "EQUIPE", "Equipe"]),
+            projeto: getImportedValue(row, ["projeto", "Projeto"]),
+            vrDia: getImportedValue(row, ["vrDia", "R$ VR DIA", "R$ VR Dia", "VR DIA"]),
+            vt: getImportedValue(row, ["vt", "R$ VT", "VT"]),
+            salario: getImportedValue(row, ["salario", "SALARIO", "Salário", "Salario"]),
+            clt: getImportedValue(row, ["clt", "CLT"]),
+            carro: getImportedValue(row, ["carro", "Carro"]),
+            placa: getImportedValue(row, ["placa", "Placa"]),
+            admissao: getImportedValue(row, ["admissao", "Admissao", "Admissão"]),
+            dataAdmissao: getImportedValue(row, ["dataAdmissao", "Admissao", "Admissão"]),
+            vencimentoContrato45: getImportedValue(row, ["vencimentoContrato45", "VENCIMENTO CONTRATO 45 DIAS", "Contrato 45 dias"]),
+            vencimentoContrato90: getImportedValue(row, ["vencimentoContrato90", "VENCIMENTO CONTRATO 90 DIAS", "Contrato 90 dias"]),
+            eSocial: getImportedValue(row, ["eSocial", "E_social", "E-social"]),
+            cracha: getImportedValue(row, ["cracha", "Cracha", "Crachá"]),
+            cartaoVrVa: getImportedValue(row, ["cartaoVrVa", "CARTÃO VR/VA", "Cartão VR/VA"]),
+            cpf: getImportedValue(row, ["cpf", "CPF"]),
+            rg: getImportedValue(row, ["rg", "RG"]),
+            nomeMae: getImportedValue(row, ["nomeMae", "NOME MAE", "Nome mãe"]),
+            nomePai: getImportedValue(row, ["nomePai", "NOME PAI", "Nome pai"]),
+            dataNascimento: getImportedValue(row, ["dataNascimento", "DATA NASCIMENTO", "Nascimento"]),
+            enderecoCompleto: getImportedValue(row, ["enderecoCompleto", "ENDEREÇO COMPLETO", "Endereco completo"]),
+            nrs1035: getImportedValue(row, ["nrs1035", "NRS_10_35", "NRS 10/35"]),
+            vencimentoNrs: getImportedValue(row, ["vencimentoNrs", "Vencimento_NRS", "Vencimento NRS"]),
+            possuiNrs: getImportedValue(row, ["possuiNrs", "Possui NRS?", "Possui NRS"]),
+            nrsVencido: getImportedValue(row, ["nrsVencido", "NRS Vencido?", "NRS vencido?"]),
+            feriasVencidas: getImportedValue(row, ["feriasVencidas", "Férias Vencidas?", "Ferias vencidas?"]),
+            podeTirarFerias: getImportedValue(row, ["podeTirarFerias", "Já Pode Tirar Férias?", "Pode tirar férias?"]),
+          },
+          index,
+        ),
+      )
+      .filter((employee) => employee.funcionario);
+
+    if (importedEmployees.length === 0) {
+      setFeedback("A planilha foi enviada, mas nenhuma linha com funcionário foi identificada.");
+      return;
+    }
+
+    setSheetEmployees((current) => mergeEmployeesByKey(importedEmployees, current ?? fallbackEmployees));
+    setSearch("");
+    setStatusFilter("TODOS");
+    setSource("google-sheets");
+    setUpdatedAt(new Date().toISOString());
+    setFeedback(`${importedEmployees.length} funcionários importados e exibidos em ${empresaAtiva}.`);
+  }
+
   async function handleRegisterEmployee(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -218,6 +277,15 @@ export default function FuncionariosPage() {
           <SummaryCard label="Inativos" value={inactiveEmployees.toString()} tone="slate" />
           <SummaryCard label="Equipes" value={teamCount.toString()} tone="yellow" />
         </section>
+
+        <ModuleSpreadsheetActions
+          description="Exporta e importa somente a planilha de funcionários da empresa ativa."
+          empresa={empresaAtiva}
+          moduleKey="funcionarios"
+          moduleLabel="Funcionários"
+          onImportRows={handleImportEmployees}
+          rows={employees}
+        />
 
         <section className="rounded-2xl border border-yellow-950/60 bg-zinc-950/80 p-5 shadow-2xl shadow-black/30">
           <div className="border-b border-white/10 pb-4">
@@ -418,4 +486,41 @@ function getEmployeePlaceholder(key: EmployeeColumnKey) {
   };
 
   return placeholders[key] ?? "";
+}
+
+function getImportedValue(row: SpreadsheetRow, aliases: string[]) {
+  const normalizedRow = new Map(
+    Object.entries(row).map(([key, value]) => [normalizeImportKey(key), String(value ?? "").trim()]),
+  );
+
+  for (const alias of aliases) {
+    const value = normalizedRow.get(normalizeImportKey(alias));
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function normalizeImportKey(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toLowerCase();
+}
+
+function mergeEmployeesByKey(importedEmployees: Employee[], currentEmployees: Employee[]) {
+  const importedKeys = new Set(importedEmployees.map(getEmployeeMergeKey));
+
+  return [
+    ...importedEmployees,
+    ...currentEmployees.filter((employee) => !importedKeys.has(getEmployeeMergeKey(employee))),
+  ];
+}
+
+function getEmployeeMergeKey(employee: Employee) {
+  return `${employee.empresa}|${employee.re || employee.cpf || employee.funcionario}`.toUpperCase();
 }

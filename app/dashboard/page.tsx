@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ErpShell } from "@/components/erp-shell";
+import { ModuleSpreadsheetActions } from "@/components/module-spreadsheet-actions";
 import { useErpData } from "@/hooks/use-erp-data";
 import { calcularResumoERP, formatCurrency } from "@/lib/calculator";
 import { companies, filterErpDataByCompany } from "@/lib/companies";
@@ -85,9 +86,27 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        <ModuleSpreadsheetActions
+          description="Exporta um resumo gerencial somente da empresa selecionada."
+          empresa={empresaAtiva}
+          moduleKey="dashboard"
+          moduleLabel="Dashboard"
+          rows={[
+            {
+              empresa: empresaAtiva,
+              faturamentoEstimado: resumo.faturamentoEstimado,
+              custoTotal: resumo.despesas,
+              lucroProjetado: resumo.saldoFinalPrevisto,
+              producaoDoMes: resumo.productionMonth.length,
+              aPagar: resumo.aPagar,
+              resultadoPrevisto: resumo.resultadoPrevisto,
+            },
+          ]}
+        />
+
         <section className="grid gap-4 md:grid-cols-4">
           <FeatureCard href="/operacao" icon="⌕" title="Dados em tempo real" />
-          <FeatureCard href="/dashboard#indicadores" icon="⌁" title="Indicadores de desempenho" />
+          <FeatureCard href="/indicadores" icon="⌁" title="Indicadores de desempenho" />
           <FeatureCard href="/financeiro" icon="↗" title="Tomada de decisão rápida" />
           <FeatureCard href="/funcionarios" icon="▣" title="Gestão por resultados" />
         </section>

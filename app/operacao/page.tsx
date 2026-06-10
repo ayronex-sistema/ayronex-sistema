@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ErpShell } from "@/components/erp-shell";
+import { ModuleSpreadsheetActions } from "@/components/module-spreadsheet-actions";
 import { createId, useErpData } from "@/hooks/use-erp-data";
 import { findBestConectaCode } from "@/utils/conecta-matcher";
 import { parseOperationMessage, type ParsedOperationMessage } from "@/utils/parser";
@@ -108,6 +109,17 @@ export default function OperacaoPage() {
             Cole a mensagem da equipe, cruze com o Conecta e gere controle de produção.
           </p>
         </div>
+
+        <ModuleSpreadsheetActions
+          description="Exporta e importa somente a produção operacional da empresa ativa."
+          empresa={empresaAtiva}
+          moduleKey="operacao"
+          moduleLabel="Operação"
+          rows={dataByCompany.production.map((record) => ({
+            ...record,
+            materiais: record.materiais.join(", "),
+          }))}
+        />
 
         <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
           <section className="rounded-xl border border-yellow-950/70 bg-zinc-950 p-6">

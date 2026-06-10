@@ -344,7 +344,7 @@ function normalizeCompany(value?: string): CompanyName {
 }
 
 function clean(value?: string) {
-  return String(value ?? "").trim();
+  return fixEncoding(String(value ?? "").trim());
 }
 
 function normalizeHeader(value?: string) {
@@ -352,4 +352,24 @@ function normalizeHeader(value?: string) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toUpperCase();
+}
+
+function fixEncoding(value: string) {
+  return value
+    .replaceAll("ÃƒO", "ÃO")
+    .replaceAll("Ãƒo", "ão")
+    .replaceAll("ÃƒA", "Ã")
+    .replaceAll("Ãƒa", "ã")
+    .replaceAll("Ãƒ", "Ã")
+    .replaceAll("Ã§", "ç")
+    .replaceAll("Ã£", "ã")
+    .replaceAll("Ã¡", "á")
+    .replaceAll("Ã¢", "â")
+    .replaceAll("Ã©", "é")
+    .replaceAll("Ãª", "ê")
+    .replaceAll("Ã­", "í")
+    .replaceAll("Ã³", "ó")
+    .replaceAll("Ã´", "ô")
+    .replaceAll("Ãº", "ú")
+    .replaceAll("NÃO", "NÃO");
 }

@@ -33,11 +33,8 @@ export function calcularFaturamentoProducao(records: ProductionRecord[]): Money 
   return roundCurrency(records.reduce((total, record) => total + record.points * record.value, 0));
 }
 
-export function calcularVR(diasTrabalhados: number, sabados: number): Money {
-  const valorDiaUtil = 25;
-  const valorSabado = 35;
-
-  return roundCurrency(safeNumber(diasTrabalhados) * valorDiaUtil + safeNumber(sabados) * valorSabado);
+export function calcularVR(diasTrabalhados: number, sabados: number, valorDia = 25, valorSabado = 35): Money {
+  return roundCurrency(safeNumber(diasTrabalhados) * safeNumber(valorDia) + safeNumber(sabados) * safeNumber(valorSabado));
 }
 
 export function calcularSaldo(entradas: Money[], saidas: Money[]): Money {

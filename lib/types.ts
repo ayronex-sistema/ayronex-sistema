@@ -42,9 +42,12 @@ export type FinanceEntry = {
 export type VrRecord = {
   id: string;
   empresa: CompanyName;
+  funcionario: string;
   equipe: string;
   diasTrabalhados: number;
   sabados: number;
+  valorDia: number;
+  valorSabado: number;
   amount: number;
 };
 

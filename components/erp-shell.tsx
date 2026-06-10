@@ -7,13 +7,14 @@ import { companies } from "@/lib/companies";
 import type { CompanyName } from "@/lib/types";
 
 type ErpShellProps = {
-  active: "dashboard" | "operacao" | "funcionarios" | "financeiro";
+  active: "dashboard" | "operacao" | "indicadores" | "funcionarios" | "financeiro";
   children: ReactNode;
 };
 
 const navigation = [
   { key: "dashboard", label: "Dashboard", href: "/dashboard" },
   { key: "operacao", label: "Operação", href: "/operacao" },
+  { key: "indicadores", label: "Indicadores", href: "/indicadores" },
   { key: "funcionarios", label: "Funcionários", href: "/funcionarios" },
   { key: "financeiro", label: "Financeiro", href: "/financeiro" },
 ] as const;
