@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ErpShell } from "@/components/erp-shell";
 import { MetricCard } from "@/components/metric-card";
-import { ModuleSpreadsheetActions } from "@/components/module-spreadsheet-actions";
+import { ModuleSpreadsheetActions, type SpreadsheetRow } from "@/components/module-spreadsheet-actions";
 import { createId, useErpData } from "@/hooks/use-erp-data";
 import { calcularVR, calculateFinanceTotals, formatCurrency } from "@/lib/calculator";
 import type { Employee, FinanceEntry, VrRecord } from "@/lib/types";
@@ -142,6 +142,44 @@ export default function FinanceiroPage() {
     });
   };
 
+  function handleImportFinance(rows: SpreadsheetRow[]) {
+    rows.forEach((row, index) => {
+      const origem = String(row.origem ?? row.Origem ?? "").toLowerCase();
+
+      if (origem.includes("vr") || row.funcionario || row.Funcionário) {
+        const diasTrabalhados = numberValue(row.diasTrabalhados ?? row.Dias ?? row.dias ?? 0);
+        const sabados = numberValue(row.sabados ?? row.Sábados ?? row.sabados ?? 0);
+        const valorDia = numberValue(row.valorDia ?? row["R$ Dia"] ?? row.vrDia ?? 25);
+        const valorSabado = numberValue(row.valorSabado ?? row["R$ Sábado"] ?? 35);
+
+        addVrRecord({
+          id: createId("vr-import"),
+          empresa: empresaAtiva,
+          funcionario: text(row.funcionario ?? row.Funcionário ?? `Funcionário ${index + 1}`),
+          equipe: text(row.equipe ?? row.Equipe ?? "Sem equipe"),
+          diasTrabalhados,
+          sabados,
+          valorDia,
+          valorSabado,
+          amount: calcularVR(diasTrabalhados, sabados, valorDia, valorSabado),
+        });
+
+        return;
+      }
+
+      addFinanceEntry({
+        id: createId("fin-import"),
+        empresa: empresaAtiva,
+        date: text(row.date ?? row.data) || new Date().toISOString().slice(0, 10),
+        description: text(row.description ?? row.descricao ?? row.Descrição) || `Importado ${index + 1}`,
+        type: normalizeFinanceType(text(row.type ?? row.tipo ?? row.Tipo)),
+        category: text(row.category ?? row.categoria ?? row.Categoria) || "Importado",
+        amount: numberValue(row.amount ?? row.valor ?? row.Valor),
+        paid: String(row.paid ?? row.pago ?? row.Pago ?? "true").toLowerCase() !== "false",
+      });
+    });
+  }
+
   return (
     <ErpShell active="financeiro">
       <section className="grid gap-6">
@@ -164,6 +202,7 @@ export default function FinanceiroPage() {
           empresa={empresaAtiva}
           moduleKey="financeiro"
           moduleLabel="Financeiro"
+          onImportRows={handleImportFinance}
           rows={[
             ...dataByCompany.finance.map((entry) => ({ origem: "Financeiro", ...entry })),
             ...dataByCompany.vr.map((record) => ({ origem: "VR", ...record })),
@@ -428,4 +467,17 @@ function parseMoney(value?: string) {
   const amount = Number(normalized);
 
   return Number.isFinite(amount) ? amount : 0;
+}
+
+function text(value: unknown) {
+  return String(value ?? "").trim();
+}
+
+function numberValue(value: unknown) {
+  const parsed = Number(String(value ?? "0").replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function normalizeFinanceType(value: string): FinanceEntry["type"] {
+  return value.toLowerCase().includes("sa") || value.toLowerCase().includes("desp") ? "Saída" : "Entrada";
 }

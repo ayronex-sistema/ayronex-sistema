@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ErpShell } from "@/components/erp-shell";
-import { ModuleSpreadsheetActions } from "@/components/module-spreadsheet-actions";
+import { ModuleSpreadsheetActions, type SpreadsheetRow } from "@/components/module-spreadsheet-actions";
 import { createId, useErpData } from "@/hooks/use-erp-data";
 import { findBestConectaCode } from "@/utils/conecta-matcher";
 import { parseOperationMessage, type ParsedOperationMessage } from "@/utils/parser";
@@ -100,6 +100,33 @@ export default function OperacaoPage() {
     setNewCode({ description: "", code: "", points: "1", value: "0" });
   };
 
+  function handleImportProduction(rows: SpreadsheetRow[]) {
+    rows.forEach((row, index) => {
+      const code = selectedCode ?? data.conectaCodes[0];
+      const record: ProductionRecord = {
+        id: createId("prod-import"),
+        empresa: empresaAtiva,
+        date: text(row.date) || text(row.data) || new Date().toISOString().slice(0, 10),
+        sp: text(row.sp) || text(row.SP) || `IMPORT-${index + 1}`,
+        cabo: text(row.cabo) || text(row.Cabo),
+        local: text(row.local) || text(row.Local),
+        status: normalizeProductionStatus(text(row.status) || text(row.Status)),
+        equipe: text(row.equipe) || text(row.Equipe) || "Sem equipe",
+        materiais: splitMaterials(text(row.materiais) || text(row.Materiais)),
+        conectaCodeId: text(row.conectaCodeId) || code?.id || "",
+        conectaCode: text(row.conectaCode) || text(row.Código) || code?.code || "",
+        points: numberValue(row.points ?? row.pontos ?? code?.points ?? 0),
+        value: numberValue(row.value ?? row.valor ?? code?.value ?? 0),
+        launchedConecta: String(row.launchedConecta ?? row.conecta ?? "").toLowerCase().includes("true"),
+        rawMessage: JSON.stringify(row),
+      };
+
+      addProduction(record);
+    });
+
+    setFeedback(`${rows.length} linhas importadas e exibidas no controle de produção.`);
+  }
+
   return (
     <ErpShell active="operacao">
       <section className="grid gap-6">
@@ -115,6 +142,7 @@ export default function OperacaoPage() {
           empresa={empresaAtiva}
           moduleKey="operacao"
           moduleLabel="Operação"
+          onImportRows={handleImportProduction}
           rows={dataByCompany.production.map((record) => ({
             ...record,
             materiais: record.materiais.join(", "),
@@ -292,4 +320,24 @@ export default function OperacaoPage() {
       </section>
     </ErpShell>
   );
+}
+
+function text(value: unknown) {
+  return String(value ?? "").trim();
+}
+
+function numberValue(value: unknown) {
+  const parsed = Number(String(value ?? "0").replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function splitMaterials(value: string) {
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function normalizeProductionStatus(value: string): ProductionStatus {
+  const normalized = value.toLowerCase();
+  if (normalized.includes("ref")) return "Refazer";
+  if (normalized.includes("pend")) return "Pendente";
+  return "OK";
 }

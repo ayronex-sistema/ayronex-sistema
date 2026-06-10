@@ -40,3 +40,4 @@ enum EmpresaStatus {
   ATIVA
   INATIVA
 }
+

@@ -322,7 +322,17 @@ function mapCadastroFuncionariosRow(row: string[]): Partial<Employee> {
 }
 
 function normalizeStatus(value?: string): EmployeeStatus {
-  return clean(value).toUpperCase() === "INATIVO" ? "INATIVO" : "ATIVO";
+  const status = clean(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
+
+  if (status.includes("FERIA")) return "FERIAS";
+  if (status.includes("ATEST")) return "ATESTADO";
+  if (status.includes("AFAST")) return "AFASTADO";
+  if (status.includes("INAT") || status.includes("DESLIG")) return "INATIVO";
+
+  return "ATIVO";
 }
 
 function normalizeCompany(value?: string): CompanyName {

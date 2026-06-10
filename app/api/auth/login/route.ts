@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentPassword } from "@/lib/server-password";
+
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const { password } = (await req.json()) as { password?: string };
-  const expectedPassword = process.env.ERP_PASSWORD || "ayronex123";
+  const expectedPassword = getCurrentPassword();
 
   if (password !== expectedPassword) {
     return NextResponse.json({ error: "Senha inválida." }, { status: 401 });

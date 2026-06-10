@@ -97,7 +97,7 @@ export function ModuleSpreadsheetActions<T extends SpreadsheetRow>({
 
       await onImportRows?.(importedRows);
 
-      setStatus({ type: "success", message: `${result.savedRows ?? importedRows.length} linhas importadas em ${moduleLabel} para ${empresa}.` });
+      setStatus({ type: "success", message: `${result.savedRows ?? importedRows.length} linhas importadas e exibidas em ${moduleLabel}.` });
     } catch (error) {
       setStatus({ type: "error", message: error instanceof Error ? error.message : "Erro ao importar planilha." });
     } finally {
@@ -106,27 +106,29 @@ export function ModuleSpreadsheetActions<T extends SpreadsheetRow>({
   }
 
   return (
-    <section className="rounded-2xl border border-yellow-950/60 bg-gradient-to-br from-zinc-950 to-black p-4 shadow-2xl shadow-black/30">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <section className="rounded-2xl border border-white/10 bg-black p-4 shadow-xl shadow-black/30">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-yellow-500">Planilha da aba</p>
-          <h2 className="mt-1 text-lg font-extrabold text-white">{moduleLabel} • {empresa}</h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-yellow-500">Planilha da aba</p>
+          <h2 className="mt-1 text-base font-extrabold text-white">{moduleLabel} • {empresa}</h2>
+          <p className="mt-1 text-xs text-slate-400">
             {description ?? "Baixe ou suba planilhas sem misturar dados de outras empresas."}
           </p>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
-            className="rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm font-extrabold text-yellow-300 transition hover:bg-yellow-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2.5 text-xs font-extrabold text-emerald-300 transition hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isExporting}
             onClick={handleExport}
             type="button"
           >
+            <ActionIcon type="download" />
             {isExporting ? "Baixando..." : "Baixar planilha"}
           </button>
 
-          <label className="cursor-pointer rounded-xl bg-yellow-500 px-4 py-3 text-center text-sm font-extrabold text-black transition hover:bg-yellow-400">
+          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-yellow-500 px-3.5 py-2.5 text-center text-xs font-extrabold text-black transition hover:bg-yellow-400">
+            <ActionIcon type="upload" />
             {isImporting ? "Subindo..." : "Subir planilha"}
             <input
               accept=".xlsx,.xls,.csv"
@@ -139,9 +141,9 @@ export function ModuleSpreadsheetActions<T extends SpreadsheetRow>({
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2 text-xs">
-        <span className="rounded-full border border-white/10 bg-black px-3 py-1 font-bold text-slate-300">{rows.length} linhas</span>
-        <span className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 font-bold text-yellow-300">Empresa isolada</span>
+      <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+        <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 font-bold text-slate-300">{rows.length} linhas</span>
+        <span className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-2.5 py-1 font-bold text-yellow-300">Empresa isolada</span>
       </div>
 
       {status.message ? (
@@ -156,6 +158,26 @@ export function ModuleSpreadsheetActions<T extends SpreadsheetRow>({
         </p>
       ) : null}
     </section>
+  );
+}
+
+function ActionIcon({ type }: { type: "download" | "upload" }) {
+  return (
+    <svg aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+      {type === "download" ? (
+        <>
+          <path d="M12 3v12" />
+          <path d="m7 10 5 5 5-5" />
+          <path d="M5 21h14" />
+        </>
+      ) : (
+        <>
+          <path d="M12 21V9" />
+          <path d="m7 14 5-5 5 5" />
+          <path d="M5 3h14" />
+        </>
+      )}
+    </svg>
   );
 }
 

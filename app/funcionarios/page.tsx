@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { EmployeeTeamCard } from "@/components/employee-team-card";
 import { ErpShell } from "@/components/erp-shell";
 import { ModuleSpreadsheetActions, type SpreadsheetRow } from "@/components/module-spreadsheet-actions";
 import { createId, useErpData } from "@/hooks/use-erp-data";
@@ -28,6 +27,8 @@ const yesNoFields = new Set<EmployeeColumnKey>([
   "podeTirarFerias",
 ]);
 
+const employeeStatusOptions: EmployeeStatus[] = ["ATIVO", "FERIAS", "ATESTADO", "AFASTADO", "INATIVO"];
+
 export default function FuncionariosPage() {
   const { data, empresaAtiva, addEmployee, updateEmployee } = useErpData();
   const [sheetEmployees, setSheetEmployees] = useState<Employee[] | null>(null);
@@ -39,6 +40,8 @@ export default function FuncionariosPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("TODOS");
   const [source, setSource] = useState<"google-sheets" | "fallback">("fallback");
   const [updatedAt, setUpdatedAt] = useState("");
+  const [viewEmployee, setViewEmployee] = useState<Employee | null>(null);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
   const fallbackEmployees = useMemo(
     () => data.employees.map((employee, index) => normalizeEmployee(employee, index)),
@@ -105,26 +108,10 @@ export default function FuncionariosPage() {
     });
   }, [employees, search, statusFilter]);
 
-  const groupedTeams = useMemo(() => {
-    const groups = new Map<string, Employee[]>();
-
-    filteredEmployees.forEach((employee) => {
-      const team = employee.equipe || "SEM EQUIPE";
-      groups.set(team, [...(groups.get(team) ?? []), employee]);
-    });
-
-    return [...groups.entries()]
-      .map(([team, teamEmployees]) => ({
-        team,
-        employees: teamEmployees,
-        activeCount: teamEmployees.filter((employee) => employee.situacao === "ATIVO").length,
-      }))
-      .sort((first, second) => first.team.localeCompare(second.team, "pt-BR"));
-  }, [filteredEmployees]);
-
   const activeEmployees = employees.filter((employee) => employee.situacao === "ATIVO").length;
   const inactiveEmployees = employees.filter((employee) => employee.situacao === "INATIVO").length;
   const teamCount = new Set(employees.map((employee) => employee.equipe || "SEM EQUIPE")).size;
+  const vacationReady = employees.filter((employee) => employee.podeTirarFerias.toUpperCase() === "SIM").length;
 
   function handleToggleStatus(employee: Employee) {
     const updatedEmployee: Employee = {
@@ -196,6 +183,13 @@ export default function FuncionariosPage() {
     }
 
     setSheetEmployees((current) => mergeEmployeesByKey(importedEmployees, current ?? fallbackEmployees));
+    importedEmployees.forEach((employee) => {
+      const alreadyExists = fallbackEmployees.some((currentEmployee) => getEmployeeMergeKey(currentEmployee) === getEmployeeMergeKey(employee));
+
+      if (!alreadyExists) {
+        addEmployee(employee);
+      }
+    });
     setSearch("");
     setStatusFilter("TODOS");
     setSource("google-sheets");
@@ -271,11 +265,12 @@ export default function FuncionariosPage() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-4">
-          <SummaryCard label="Total na base" value={employees.length.toString()} />
-          <SummaryCard label="Ativos" value={activeEmployees.toString()} tone="green" />
-          <SummaryCard label="Inativos" value={inactiveEmployees.toString()} tone="slate" />
-          <SummaryCard label="Equipes" value={teamCount.toString()} tone="yellow" />
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <SummaryCard helper="Na empresa ativa" icon="👥" label="Total de funcionários" tone="green" value={employees.length.toString()} />
+          <SummaryCard helper={`${percent(activeEmployees, employees.length)}% do total`} icon="👤" label="Ativos" tone="blue" value={activeEmployees.toString()} />
+          <SummaryCard helper={`${teamCount} equipes`} icon="🏢" label="Equipes" tone="yellow" value={teamCount.toString()} />
+          <SummaryCard helper="Podem tirar férias" icon="🏖" label="Em férias" tone="purple" value={vacationReady.toString()} />
+          <SummaryCard helper={`${percent(inactiveEmployees, employees.length)}% do total`} icon="🚫" label="Desligados" tone="red" value={inactiveEmployees.toString()} />
         </section>
 
         <ModuleSpreadsheetActions
@@ -307,8 +302,9 @@ export default function FuncionariosPage() {
                       onChange={(event) => handleEmployeeFieldChange(column.key, event.target.value)}
                       value={employeeForm[column.key]}
                     >
-                      <option value="ATIVO">ATIVO</option>
-                      <option value="INATIVO">INATIVO</option>
+                      {employeeStatusOptions.map((option) => (
+                        <option key={option} value={option}>{statusLabel(option)}</option>
+                      ))}
                     </select>
                   ) : yesNoFields.has(column.key) ? (
                     <select
@@ -380,8 +376,9 @@ export default function FuncionariosPage() {
                 value={statusFilter}
               >
                 <option value="TODOS">Todos</option>
-                <option value="ATIVO">Ativo</option>
-                <option value="INATIVO">Inativo</option>
+                {employeeStatusOptions.map((option) => (
+                  <option key={option} value={option}>{statusLabel(option)}</option>
+                ))}
               </select>
             </label>
           </div>
@@ -397,49 +394,187 @@ export default function FuncionariosPage() {
           </p>
         </section>
 
-        <section className="space-y-5">
-          {groupedTeams.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/10 bg-zinc-950/80 p-6 text-sm text-slate-400">
-              Nenhum funcionário encontrado com os filtros atuais.
-            </div>
-          ) : (
-            groupedTeams.map(({ team, employees: teamEmployees, activeCount }) => (
-              <div className="relative" key={team}>
-                <EmployeeTeamCard employees={teamEmployees} onToggleStatus={handleToggleStatus} team={team} />
-                <span className="absolute right-5 top-5 hidden rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-300 md:inline-flex">
-                  {activeCount} ativos
-                </span>
-              </div>
-            ))
-          )}
+        <section className="rounded-2xl border border-white/10 bg-black p-5 shadow-2xl shadow-black/30">
+          <h2 className="text-lg font-extrabold uppercase tracking-[0.08em] text-white">Lista de funcionários</h2>
+          <div className="mt-5 overflow-hidden rounded-xl border border-white/10">
+            <table className="w-full min-w-[1080px] text-left text-sm">
+              <thead className="bg-white/[0.04] text-xs uppercase tracking-[0.08em] text-slate-400">
+                <tr>
+                  <th className="px-4 py-4">Funcionário</th>
+                  <th className="px-4 py-4">Cargo / Função</th>
+                  <th className="px-4 py-4">Departamento</th>
+                  <th className="px-4 py-4">Projeto</th>
+                  <th className="px-4 py-4">Status</th>
+                  <th className="px-4 py-4">Admissão</th>
+                  <th className="px-4 py-4 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {filteredEmployees.length === 0 ? (
+                  <tr>
+                    <td className="px-4 py-8 text-center text-slate-500" colSpan={7}>
+                      Nenhum funcionário encontrado com os filtros atuais.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredEmployees.map((employee) => (
+                    <tr className="transition hover:bg-white/[0.03]" key={employee.id}>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <EmployeeAvatar name={employee.funcionario} />
+                          <div>
+                            <p className="font-extrabold text-white">{employee.funcionario}</p>
+                            <p className="mt-1 text-xs text-slate-500">#{employee.re || employee.cpf || "SEM-RE"}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-slate-300">
+                        {employee.cargo || "Não informado"} <RolePill value={employee.seguimento} />
+                      </td>
+                      <td className="px-4 py-4 text-slate-300">{employee.equipe || "SEM EQUIPE"}</td>
+                      <td className="px-4 py-4 text-slate-300">{employee.projeto || "Não informado"}</td>
+                      <td className="px-4 py-4"><StatusBadge status={employee.situacao} /></td>
+                      <td className="px-4 py-4 text-slate-300">{employee.admissao || employee.dataAdmissao || "-"}</td>
+                      <td className="px-4 py-4">
+                        <div className="flex justify-end gap-2">
+                          <ActionButton label="Ver" onClick={() => setViewEmployee(employee)} tone="view" />
+                          <ActionButton label="Editar" onClick={() => setEditingEmployee(employee)} tone="edit" />
+                          <button
+                            className="grid size-9 place-items-center rounded-lg bg-red-500/10 text-red-300 transition hover:bg-red-500/20"
+                            onClick={() => handleToggleStatus(employee)}
+                            title={employee.situacao === "ATIVO" ? "Marcar como inativo" : "Marcar como ativo"}
+                            type="button"
+                          >
+                            🗑
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 text-sm text-slate-400">
+            Mostrando {filteredEmployees.length} de {employees.length} funcionários
+          </p>
         </section>
+
+        {viewEmployee ? (
+          <EmployeeViewModal employee={viewEmployee} onClose={() => setViewEmployee(null)} />
+        ) : null}
+
+        {editingEmployee ? (
+          <EmployeeEditModal
+            employee={editingEmployee}
+            onClose={() => setEditingEmployee(null)}
+            onSave={(employee) => {
+              updateEmployee(employee);
+              setSheetEmployees((current) => current?.map((item) => (item.id === employee.id ? employee : item)) ?? current);
+              setEditingEmployee(null);
+            }}
+          />
+        ) : null}
       </div>
     </ErpShell>
   );
 }
 
 function SummaryCard({
+  helper,
+  icon,
   label,
   value,
   tone = "default",
 }: {
+  helper: string;
+  icon: string;
   label: string;
   value: string;
-  tone?: "default" | "green" | "slate" | "yellow";
+  tone?: "default" | "green" | "slate" | "yellow" | "blue" | "purple" | "red";
 }) {
   const tones = {
-    default: "text-white",
-    green: "text-emerald-300",
-    slate: "text-slate-300",
-    yellow: "text-yellow-300",
+    default: ["text-white", "bg-white/10"],
+    green: ["text-emerald-300", "bg-emerald-500/15"],
+    slate: ["text-slate-300", "bg-slate-500/15"],
+    yellow: ["text-yellow-300", "bg-yellow-500/15"],
+    blue: ["text-blue-300", "bg-blue-500/15"],
+    purple: ["text-purple-300", "bg-purple-500/15"],
+    red: ["text-red-300", "bg-red-500/15"],
   };
 
   return (
-    <article className="rounded-2xl border border-yellow-950/60 bg-zinc-950/80 p-5 shadow-2xl shadow-black/30">
-      <p className="text-sm font-semibold text-slate-400">{label}</p>
-      <p className={`mt-3 text-3xl font-extrabold ${tones[tone]}`}>{value}</p>
+    <article className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black p-5 shadow-2xl shadow-black/30">
+      <div className={`grid size-12 place-items-center rounded-xl text-xl ${tones[tone][1]}`}>{icon}</div>
+      <div>
+        <p className={`text-xs font-extrabold uppercase tracking-[0.12em] ${tones[tone][0]}`}>{label}</p>
+        <p className="mt-1 text-3xl font-extrabold text-white">{value}</p>
+        <p className="mt-1 text-xs text-slate-400">{helper}</p>
+      </div>
     </article>
   );
+}
+
+function EmployeeAvatar({ name }: { name: string }) {
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+
+  return (
+    <div className="grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-slate-600 to-slate-900 text-sm font-black text-white">
+      {initials || "?"}
+    </div>
+  );
+}
+
+function RolePill({ value }: { value: string }) {
+  if (!value) return null;
+
+  return <span className="ml-2 rounded-full bg-yellow-500/10 px-2 py-1 text-[11px] font-bold text-yellow-300">{value}</span>;
+}
+
+function StatusBadge({ status }: { status: EmployeeStatus }) {
+  const styles: Record<EmployeeStatus, string> = {
+    ATIVO: "bg-emerald-500/10 text-emerald-300",
+    FERIAS: "bg-yellow-500/10 text-yellow-300",
+    ATESTADO: "bg-blue-500/10 text-blue-300",
+    AFASTADO: "bg-purple-500/10 text-purple-300",
+    INATIVO: "bg-red-500/10 text-red-300",
+  };
+  const dot: Record<EmployeeStatus, string> = {
+    ATIVO: "bg-emerald-300",
+    FERIAS: "bg-yellow-300",
+    ATESTADO: "bg-blue-300",
+    AFASTADO: "bg-purple-300",
+    INATIVO: "bg-red-300",
+  };
+
+  return (
+    <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ${styles[status]}`}>
+      <span className={`size-1.5 rounded-full ${dot[status]}`} />
+      {statusLabel(status)}
+    </span>
+  );
+}
+
+function ActionButton({ label, onClick, tone }: { label: string; onClick: () => void; tone: "view" | "edit" }) {
+  const styles = tone === "view" ? "bg-slate-500/10 text-slate-300" : "bg-yellow-500/10 text-yellow-300";
+  const icon = tone === "view" ? "👁" : "✎";
+
+  return (
+    <button className={`grid size-9 place-items-center rounded-lg transition hover:bg-white/10 ${styles}`} onClick={onClick} title={label} type="button">
+      {icon}
+    </button>
+  );
+}
+
+function percent(value: number, total: number) {
+  if (!total) return "0";
+  return ((value / total) * 100).toFixed(1).replace(".", ",");
 }
 
 function formatDateTime(value: string) {
@@ -523,4 +658,113 @@ function mergeEmployeesByKey(importedEmployees: Employee[], currentEmployees: Em
 
 function getEmployeeMergeKey(employee: Employee) {
   return `${employee.empresa}|${employee.re || employee.cpf || employee.funcionario}`.toUpperCase();
+}
+
+function EmployeeViewModal({ employee, onClose }: { employee: Employee; onClose: () => void }) {
+  const details = [
+    ["RE", employee.re],
+    ["Funcionário", employee.funcionario],
+    ["Cargo", employee.cargo],
+    ["Equipe", employee.equipe],
+    ["Projeto", employee.projeto],
+    ["Status", statusLabel(employee.situacao)],
+    ["Admissão", employee.admissao || employee.dataAdmissao],
+    ["CPF", employee.cpf],
+    ["RG", employee.rg],
+    ["VR Dia", employee.vrDia],
+    ["Telefone/VT", employee.vt],
+    ["Endereço", employee.enderecoCompleto],
+  ];
+
+  return (
+    <Modal title="Informações do funcionário" onClose={onClose}>
+      <div className="grid gap-3 md:grid-cols-2">
+        {details.map(([label, value]) => (
+          <div className="rounded-xl border border-white/10 bg-black p-3" key={label}>
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+            <p className="mt-1 text-sm font-semibold text-white">{value || "Não informado"}</p>
+          </div>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
+function EmployeeEditModal({
+  employee,
+  onClose,
+  onSave,
+}: {
+  employee: Employee;
+  onClose: () => void;
+  onSave: (employee: Employee) => void;
+}) {
+  const [draft, setDraft] = useState(employee);
+
+  return (
+    <Modal title="Editar funcionário" onClose={onClose}>
+      <div className="grid gap-4 md:grid-cols-2">
+        <EditField label="Funcionário" onChange={(value) => setDraft((current) => ({ ...current, funcionario: value, nome: value }))} value={draft.funcionario} />
+        <EditField label="Cargo" onChange={(value) => setDraft((current) => ({ ...current, cargo: value }))} value={draft.cargo} />
+        <EditField label="Equipe" onChange={(value) => setDraft((current) => ({ ...current, equipe: value }))} value={draft.equipe} />
+        <EditField label="Projeto" onChange={(value) => setDraft((current) => ({ ...current, projeto: value }))} value={draft.projeto} />
+        <label>
+          <span className="text-sm font-bold text-slate-300">Status</span>
+          <select
+            className="mt-2 w-full rounded-xl border border-white/10 bg-black px-3 py-3 text-sm text-white outline-none focus:border-yellow-500"
+            onChange={(event) => setDraft((current) => ({ ...current, situacao: event.target.value as EmployeeStatus }))}
+            value={draft.situacao}
+          >
+            {employeeStatusOptions.map((status) => (
+              <option key={status} value={status}>{statusLabel(status)}</option>
+            ))}
+          </select>
+        </label>
+        <EditField label="Admissão" onChange={(value) => setDraft((current) => ({ ...current, admissao: value, dataAdmissao: value }))} value={draft.admissao || draft.dataAdmissao} />
+      </div>
+      <div className="mt-5 flex justify-end gap-3">
+        <button className="rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-slate-300" onClick={onClose} type="button">Cancelar</button>
+        <button className="rounded-xl bg-yellow-500 px-4 py-2 text-sm font-black text-black" onClick={() => onSave(draft)} type="button">Salvar alterações</button>
+      </div>
+    </Modal>
+  );
+}
+
+function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4">
+      <section className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-3xl border border-white/10 bg-zinc-950 p-6 shadow-2xl shadow-black">
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <h2 className="text-xl font-black text-white">{title}</h2>
+          <button className="grid size-9 place-items-center rounded-xl bg-white/10 text-white" onClick={onClose} type="button">×</button>
+        </div>
+        {children}
+      </section>
+    </div>
+  );
+}
+
+function EditField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label>
+      <span className="text-sm font-bold text-slate-300">{label}</span>
+      <input
+        className="mt-2 w-full rounded-xl border border-white/10 bg-black px-3 py-3 text-sm text-white outline-none focus:border-yellow-500"
+        onChange={(event) => onChange(event.target.value)}
+        value={value}
+      />
+    </label>
+  );
+}
+
+function statusLabel(status: EmployeeStatus) {
+  const labels: Record<EmployeeStatus, string> = {
+    ATIVO: "Ativo",
+    FERIAS: "Férias",
+    ATESTADO: "Atestado",
+    AFASTADO: "Afastado",
+    INATIVO: "Desligado",
+  };
+
+  return labels[status];
 }

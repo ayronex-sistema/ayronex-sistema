@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const protectedRoutes = ["/dashboard", "/operacao", "/indicadores", "/funcionarios", "/financeiro"];
+const protectedRoutes = ["/dashboard", "/operacao", "/indicadores", "/funcionarios", "/financeiro", "/configuracoes", "/seguranca"];
 
 export function proxy(req: NextRequest) {
   const isProtected = protectedRoutes.some((route) => req.nextUrl.pathname.startsWith(route));
@@ -18,5 +18,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/operacao/:path*", "/indicadores/:path*", "/funcionarios/:path*", "/financeiro/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/operacao/:path*", "/indicadores/:path*", "/funcionarios/:path*", "/financeiro/:path*", "/configuracoes/:path*", "/seguranca/:path*", "/login"],
 };

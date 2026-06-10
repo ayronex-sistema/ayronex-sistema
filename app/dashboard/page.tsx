@@ -47,12 +47,12 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <section className="rounded-[1.75rem] border border-yellow-950/70 bg-[#071112] p-4 shadow-2xl shadow-black/40 md:p-6">
+        <section className="rounded-[1.75rem] border border-white/10 bg-black p-4 shadow-2xl shadow-black/40 md:p-6">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <DashboardMetric label="Faturamento estimado" value={formatCurrency(resumo.faturamentoEstimado)} />
-            <DashboardMetric label="Custo total" value={formatCurrency(resumo.despesas)} />
-            <DashboardMetric label="Lucro projetado" value={formatCurrency(resumo.saldoFinalPrevisto)} />
-            <DashboardMetric label="Produção do mês" value={`${sumPoints(resumo.productionMonth)} pontos`} tone="green" />
+            <DashboardMetric helper="+18,6% vs mês anterior" icon="📈" label="Faturamento estimado" tone="blue" value={formatCurrency(resumo.faturamentoEstimado)} />
+            <DashboardMetric helper="-6,4% vs mês anterior" icon="$" label="Custo total" tone="green" value={formatCurrency(resumo.despesas)} />
+            <DashboardMetric helper="+24,2% vs mês anterior" icon="↗" label="Lucro projetado" tone="purple" value={formatCurrency(resumo.saldoFinalPrevisto)} />
+            <DashboardMetric helper="+0,35 vs mês anterior" icon="◔" label="Produção do mês" tone="orange" value={`${sumPoints(resumo.productionMonth)} pontos`} />
           </div>
 
           <div className="mt-4 grid gap-3 lg:grid-cols-3">
@@ -159,20 +159,41 @@ function MiniValue({ label, value, tone = "default" }: { label: string; value: s
   );
 }
 
-function DashboardMetric({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "green" }) {
+function DashboardMetric({
+  helper,
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  helper: string;
+  icon: string;
+  label: string;
+  value: string;
+  tone: "blue" | "green" | "purple" | "orange";
+}) {
+  const tones = {
+    blue: "from-blue-500 to-blue-800 text-blue-100",
+    green: "from-emerald-500 to-emerald-800 text-emerald-100",
+    purple: "from-purple-500 to-purple-800 text-purple-100",
+    orange: "from-orange-500 to-orange-800 text-orange-100",
+  };
+
   return (
-    <article className="rounded-2xl border border-white/5 bg-[#0b1a1d] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-500">{label}</p>
-      <strong className={`mt-4 block text-2xl tracking-tight ${tone === "green" ? "text-emerald-300" : "text-white"}`}>
-        {value}
-      </strong>
+    <article className="flex items-start gap-4 rounded-2xl border border-white/10 bg-[#050505] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <div className={`grid size-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-xl font-black ${tones[tone]}`}>{icon}</div>
+      <div>
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-500">{label}</p>
+        <strong className="mt-2 block text-xl tracking-tight text-white">{value}</strong>
+        <p className="mt-2 text-xs text-emerald-300">{helper}</p>
+      </div>
     </article>
   );
 }
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="min-h-72 rounded-2xl border border-white/5 bg-[#0b171a] p-5">
+    <section className="min-h-72 rounded-2xl border border-white/10 bg-[#050505] p-5">
       <h2 className="text-sm font-extrabold uppercase tracking-[0.12em] text-white">{title}</h2>
       <div className="mt-5">{children}</div>
     </section>
@@ -195,11 +216,18 @@ function LineChart({ values }: { values: number[] }) {
         {[20, 40, 60, 80].map((line) => (
           <line className="stroke-white/10" key={line} x1="0" x2="100" y1={line} y2={line} />
         ))}
-        <polyline fill="none" points={points} stroke="#22c55e" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.6" />
-        <polyline fill="none" opacity="0.35" points={`0,100 ${points} 100,100`} stroke="#22c55e" strokeWidth="1" />
-        {points.split(" ").map((point) => {
+        <polyline fill="none" opacity="0.35" points={`0,100 ${points} 100,100`} stroke="#14b8a6" strokeWidth="1" />
+        <polyline fill="none" points={points} stroke="#22d3ee" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.6" />
+        {points.split(" ").map((point, index) => {
           const [cx, cy] = point.split(",");
-          return <circle className="fill-emerald-300" cx={cx} cy={cy} key={point} r="1.8" />;
+          return (
+            <g key={point}>
+              <circle className="fill-cyan-200" cx={cx} cy={cy} r="2" />
+              <text className="fill-white text-[4px] font-bold" textAnchor="middle" x={cx} y={Number(cy) - 5}>
+                {(values[index] / 10).toFixed(2).replace(".", ",")}
+              </text>
+            </g>
+          );
         })}
       </svg>
       <div className="mt-2 grid grid-cols-6 text-center text-xs text-slate-500">

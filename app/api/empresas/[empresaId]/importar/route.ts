@@ -18,6 +18,57 @@ type RouteContext = {
   }>;
 };
 
+export async function GET(_req: NextRequest, context: RouteContext) {
+  try {
+    const { empresaId } = await context.params;
+
+    if (!empresaId) {
+      return NextResponse.json({ error: "ID da empresa é obrigatório." }, { status: 400 });
+    }
+
+    const empresa = await prisma.empresa.findUnique({
+      where: { id: empresaId },
+      include: {
+        dados: {
+          orderBy: { criadoEm: "desc" },
+        },
+      },
+    });
+
+    if (!empresa) {
+      return NextResponse.json({ error: "Empresa não encontrada." }, { status: 400 });
+    }
+
+    return NextResponse.json({
+      empresa: {
+        id: empresa.id,
+        nome: empresa.nome,
+        cnpj: empresa.cnpj,
+        status: empresa.status,
+      },
+      dados: empresa.dados.map((item) => ({
+        id: item.id,
+        nome: item.nome,
+        telefone: item.telefone,
+        plano: item.plano,
+        status: item.status,
+        criadoEm: item.criadoEm,
+        ...(isPlainObject(item.dadosOriginais) ? item.dadosOriginais : {}),
+      })),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro interno ao buscar dados da empresa.";
+
+    return NextResponse.json(
+      {
+        error: "Erro interno ao buscar dados da empresa.",
+        details: process.env.NODE_ENV === "development" ? message : undefined,
+      },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(req: NextRequest, context: RouteContext) {
   try {
     const { empresaId } = await context.params;
@@ -98,4 +149,8 @@ function optionalText(value: unknown) {
 
 function toPrismaJson(row: SpreadsheetRow): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(row)) as Prisma.InputJsonValue;
+}
+
+function isPlainObject(value: Prisma.JsonValue): value is Record<string, Prisma.JsonValue> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }

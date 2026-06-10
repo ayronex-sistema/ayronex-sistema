@@ -51,7 +51,7 @@ export type VrRecord = {
   amount: number;
 };
 
-export type EmployeeStatus = "ATIVO" | "INATIVO";
+export type EmployeeStatus = "ATIVO" | "FERIAS" | "ATESTADO" | "AFASTADO" | "INATIVO";
 
 export type EmployeeTeam = string;
 
