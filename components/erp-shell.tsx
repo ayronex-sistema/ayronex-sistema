@@ -54,7 +54,7 @@ export function ErpShell({ active, children }: ErpShellProps) {
             <div className="flex items-center gap-3 lg:hidden">
               <LogoMark />
               <div>
-                <p className="text-lg font-extrabold leading-none erp-accent-text">AYRONEX</p>
+                <p className="text-lg font-extrabold leading-none text-[#f5b900]">AYRONEX</p>
                 <p className="mt-1 text-[10px] tracking-[0.18em] text-slate-400">TELECOM & FIELD</p>
               </div>
             </div>
@@ -99,7 +99,7 @@ function BrandBlock() {
       <div className="flex items-center gap-3">
         <LogoMark />
         <div>
-          <p className="text-lg font-black leading-none erp-accent-text">AYRONEX</p>
+          <p className="text-lg font-black leading-none text-[#f5b900]">AYRONEX</p>
           <p className="mt-1.5 text-[10px] tracking-[0.24em] text-slate-400">TELECOM & FIELD</p>
         </div>
       </div>
@@ -113,8 +113,10 @@ function BrandBlock() {
 
 function LogoMark() {
   return (
-    <div className="erp-glow grid size-11 place-items-center rounded-2xl border border-white/10 bg-gradient-to-br from-yellow-200 to-yellow-700 text-black">
-      <span className="text-2xl font-black italic">A</span>
+    <div className="grid size-11 place-items-center rounded-2xl border border-yellow-500/40 bg-black shadow-[0_0_24px_rgba(245,185,0,0.18)]">
+      <span className="bg-gradient-to-br from-yellow-200 via-yellow-500 to-yellow-800 bg-clip-text text-2xl font-black italic text-transparent">
+        A
+      </span>
     </div>
   );
 }
