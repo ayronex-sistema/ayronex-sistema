@@ -26,9 +26,6 @@ export default function DashboardPage() {
         <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <span className="grid size-11 place-items-center rounded-xl bg-yellow-500 text-lg font-black text-black">
-                06
-              </span>
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.28em] text-yellow-500">Dashboard gerencial</p>
                 <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white">Visão completa da operação</h1>
@@ -49,10 +46,10 @@ export default function DashboardPage() {
 
         <section className="rounded-[1.75rem] border border-white/10 bg-black p-4 shadow-2xl shadow-black/40 md:p-6">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <DashboardMetric helper="+18,6% vs mês anterior" icon="📈" label="Faturamento estimado" tone="blue" value={formatCurrency(resumo.faturamentoEstimado)} />
-            <DashboardMetric helper="-6,4% vs mês anterior" icon="$" label="Custo total" tone="green" value={formatCurrency(resumo.despesas)} />
-            <DashboardMetric helper="+24,2% vs mês anterior" icon="↗" label="Lucro projetado" tone="purple" value={formatCurrency(resumo.saldoFinalPrevisto)} />
-            <DashboardMetric helper="+0,35 vs mês anterior" icon="◔" label="Produção do mês" tone="orange" value={`${sumPoints(resumo.productionMonth)} pontos`} />
+            <DashboardMetric helper="+18,6% X mês anterior" icon="📈" label="Faturamento estimado" tone="blue" value={formatCurrency(resumo.faturamentoEstimado)} />
+            <DashboardMetric helper="-6,4% X mês anterior" icon="$" label="Custo total" tone="green" value={formatCurrency(resumo.despesas)} />
+            <DashboardMetric helper="+24,2% X mês anterior" icon="↗" label="Lucro projetado" tone="purple" value={formatCurrency(resumo.saldoFinalPrevisto)} />
+            <DashboardMetric helper="+0,35 X mês anterior" icon="◔" label="Produção do mês" tone="orange" value={`${sumPoints(resumo.productionMonth)} pontos`} />
           </div>
 
           <div className="mt-4 grid gap-3 lg:grid-cols-3">
@@ -196,28 +193,29 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 
 function LineChart({ values }: { values: number[] }) {
   const maxValue = Math.max(...values, 1);
+  const width = 600;
+  const height = 180;
+  const paddingX = 28;
+  const paddingTop = 24;
+  const paddingBottom = 18;
   const points = values
     .map((value, index) => {
-      const x = (index / Math.max(values.length - 1, 1)) * 100;
-      const y = 100 - (value / maxValue) * 82 - 8;
+      const x = paddingX + (index / Math.max(values.length - 1, 1)) * (width - paddingX * 2);
+      const y = paddingTop + (1 - value / maxValue) * (height - paddingTop - paddingBottom);
       return `${x},${y}`;
     })
     .join(" ");
 
   return (
     <div>
-      <svg className="h-52 w-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
-        {[20, 40, 60, 80].map((line) => (
-          <line className="stroke-white/10" key={line} x1="0" x2="100" y1={line} y2={line} />
-        ))}
-        <polyline fill="none" opacity="0.35" points={`0,100 ${points} 100,100`} stroke="#14b8a6" strokeWidth="1" />
-        <polyline fill="none" points={points} stroke="#22d3ee" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.6" />
+      <svg className="h-44 w-full overflow-visible" viewBox={`0 0 ${width} ${height}`}>
+        <polyline fill="none" points={points} stroke="#22d3ee" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
         {points.split(" ").map((point, index) => {
           const [cx, cy] = point.split(",");
           return (
             <g key={point}>
-              <circle className="fill-cyan-200" cx={cx} cy={cy} r="2" />
-              <text className="fill-white text-[4px] font-bold" textAnchor="middle" x={cx} y={Number(cy) - 5}>
+              <circle className="fill-cyan-200" cx={cx} cy={cy} r="4" />
+              <text className="fill-white text-[11px] font-bold" textAnchor="middle" x={cx} y={Number(cy) - 10}>
                 {(values[index] / 10).toFixed(2).replace(".", ",")}
               </text>
             </g>

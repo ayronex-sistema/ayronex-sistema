@@ -383,6 +383,27 @@ export default function FuncionariosPage() {
             </label>
           </div>
 
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(["TODOS", ...employeeStatusOptions] as StatusFilter[]).map((status) => {
+              const selected = statusFilter === status;
+
+              return (
+                <button
+                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                    selected
+                      ? "border-yellow-500 bg-yellow-500 text-black"
+                      : "border-white/10 bg-black text-slate-300 hover:border-yellow-500/50 hover:text-yellow-300"
+                  }`}
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  type="button"
+                >
+                  {status === "TODOS" ? "Todos" : statusLabel(status)}
+                </button>
+              );
+            })}
+          </div>
+
           <p
             className={`mt-4 rounded-xl border px-3 py-2 text-sm ${
               source === "google-sheets"
@@ -719,6 +740,26 @@ function EmployeeEditModal({
               <option key={status} value={status}>{statusLabel(status)}</option>
             ))}
           </select>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {employeeStatusOptions.map((status) => {
+              const selected = draft.situacao === status;
+
+              return (
+                <button
+                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                    selected
+                      ? "border-yellow-500 bg-yellow-500 text-black"
+                      : "border-white/10 bg-black text-slate-300 hover:border-yellow-500/50 hover:text-yellow-300"
+                  }`}
+                  key={status}
+                  onClick={() => setDraft((current) => ({ ...current, situacao: status }))}
+                  type="button"
+                >
+                  {statusLabel(status)}
+                </button>
+              );
+            })}
+          </div>
         </label>
         <EditField label="Admissão" onChange={(value) => setDraft((current) => ({ ...current, admissao: value, dataAdmissao: value }))} value={draft.admissao || draft.dataAdmissao} />
       </div>
