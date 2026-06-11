@@ -8,7 +8,7 @@ import { companies, filterErpDataByCompany } from "@/lib/companies";
 import type { CompanyName, ErpData } from "@/lib/types";
 
 export default function IndicadoresPage() {
-  const { data, dataByCompany, empresaAtiva, setEmpresaAtiva } = useErpData();
+  const { data, dataByCompany, empresaAtiva } = useErpData();
   const resumoAtivo = calcularResumoERP(dataByCompany);
   const indicadoresPorEmpresa = companies.map((company) => buildCompanyIndicators(data, company));
   const equipes = Object.entries(resumoAtivo.productionByTeam).sort(([, a], [, b]) => b.points - a.points);
@@ -69,15 +69,13 @@ export default function IndicadoresPage() {
 
         <section className="grid gap-4 lg:grid-cols-3">
           {indicadoresPorEmpresa.map((company) => (
-            <button
-              className={`rounded-2xl border p-5 text-left transition hover:-translate-y-0.5 ${
+            <article
+              className={`rounded-2xl border p-5 text-left ${
                 company.name === empresaAtiva
                   ? "border-yellow-500/70 bg-yellow-500/10"
-                  : "border-yellow-950/60 bg-zinc-950 hover:border-yellow-500/50"
+                  : "border-yellow-950/60 bg-zinc-950"
               }`}
               key={company.name}
-              onClick={() => setEmpresaAtiva(company.name)}
-              type="button"
             >
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-sm font-extrabold uppercase tracking-[0.18em] text-yellow-400">{company.name}</h2>
@@ -91,7 +89,7 @@ export default function IndicadoresPage() {
                 <MiniStat label="Despesas" value={formatCurrency(company.despesas)} />
                 <MiniStat label="Saldo previsto" value={formatCurrency(company.saldo)} tone={company.saldo >= 0 ? "good" : "bad"} />
               </div>
-            </button>
+            </article>
           ))}
         </section>
 
