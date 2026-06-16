@@ -5,35 +5,92 @@ type BrandLogoProps = {
   showSubtitle?: boolean;
 };
 
-export function BrandLogo({ compact = false, showSubtitle = true }: BrandLogoProps) {
-  if (compact) {
-    return (
-      <div className="flex items-center gap-3">
-        <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[#d6b15a]/40 bg-black shadow-[0_0_18px_rgba(214,177,90,0.14)]">
-          <span className="bg-gradient-to-br from-[#fff1bf] via-[#d6b15a] to-[#8b6a20] bg-clip-text text-[1.7rem] font-black italic leading-none text-transparent">
-            A
-          </span>
-        </div>
+const colors = {
+  gold: "#f3c94d",
+  goldLight: "#fff0b8",
+  goldMid: "#d6b15a",
+  goldDark: "#8b6a20",
+  text: "#0b1020",
+  muted: "#94a3b8",
+};
 
-        <div>
-          <p className="text-[17px] font-extrabold leading-none tracking-tight text-[#f3c94d]">AYRONEX</p>
-          {showSubtitle ? <p className="mt-1 text-[10px] tracking-[0.28em] text-slate-400">TELECOM & FIELD</p> : null}
-        </div>
-      </div>
-    );
-  }
+export function BrandLogo({ compact = false, showSubtitle = true }: BrandLogoProps) {
+  const iconSize = compact ? 40 : 56;
+  const titleSize = compact ? 17 : 28;
+  const subtitleSize = compact ? 10 : 11;
+  const gap = compact ? 12 : 16;
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="grid size-14 shrink-0 place-items-center rounded-[1.15rem] border border-[#d6b15a]/40 bg-black shadow-[0_0_22px_rgba(214,177,90,0.16)]">
-        <span className="bg-gradient-to-br from-[#fff1bf] via-[#d6b15a] to-[#8b6a20] bg-clip-text text-[2.15rem] font-black italic leading-none text-transparent">
+    <div
+      style={{
+        alignItems: "center",
+        display: "flex",
+        gap,
+      }}
+    >
+      <div
+        style={{
+          alignItems: "center",
+          backgroundColor: "#000000",
+          border: "1px solid rgba(214, 177, 90, 0.4)",
+          borderRadius: compact ? 16 : 18,
+          boxShadow: "0 0 22px rgba(214, 177, 90, 0.16)",
+          display: "flex",
+          flex: "0 0 auto",
+          height: iconSize,
+          justifyContent: "center",
+          width: iconSize,
+        }}
+      >
+        <span
+          style={{
+            background: `linear-gradient(135deg, ${colors.goldLight} 0%, ${colors.goldMid} 55%, ${colors.goldDark} 100%)`,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            color: "transparent",
+            display: "block",
+            fontFamily: "Arial, Helvetica, sans-serif",
+            fontSize: compact ? 28 : 34,
+            fontStyle: "italic",
+            fontWeight: 900,
+            lineHeight: 1,
+            transform: "translateY(-1px)",
+          }}
+        >
           A
         </span>
       </div>
 
-      <div>
-        <p className="text-[1.75rem] font-black leading-none tracking-tight text-[#f3c94d]">AYRONEX</p>
-        {showSubtitle ? <p className="mt-1 text-[0.68rem] tracking-[0.36em] text-slate-400">TELECOM & FIELD</p> : null}
+      <div style={{ minWidth: 0 }}>
+        <p
+          style={{
+            color: colors.gold,
+            fontFamily: "Arial, Helvetica, sans-serif",
+            fontSize: titleSize,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            lineHeight: 1,
+            margin: 0,
+          }}
+        >
+          AYRONEX
+        </p>
+        {showSubtitle ? (
+          <p
+            style={{
+              color: colors.muted,
+              fontFamily: "Arial, Helvetica, sans-serif",
+              fontSize: subtitleSize,
+              fontWeight: 500,
+              letterSpacing: compact ? "0.28em" : "0.34em",
+              lineHeight: 1,
+              margin: "6px 0 0",
+              textTransform: "uppercase",
+            }}
+          >
+            TELECOM & FIELD
+          </p>
+        ) : null}
       </div>
     </div>
   );
