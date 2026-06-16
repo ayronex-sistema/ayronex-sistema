@@ -11,7 +11,7 @@ export function BrandLogo({ compact = false, showSubtitle = true }: BrandLogoPro
       <div className="flex items-center gap-3">
         <div className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[#d6b15a]/60 bg-black shadow-[0_0_24px_rgba(214,177,90,0.2)]">
           <span className="bg-gradient-to-br from-[#ffe39b] via-[#d6b15a] to-[#8b6a20] bg-clip-text text-2xl font-black italic leading-none text-transparent">
-            E
+            A
           </span>
         </div>
 
@@ -27,7 +27,7 @@ export function BrandLogo({ compact = false, showSubtitle = true }: BrandLogoPro
     <div className="flex items-center gap-4">
       <div className="grid size-16 shrink-0 place-items-center rounded-[1.25rem] border border-[#d6b15a]/60 bg-black shadow-[0_0_28px_rgba(214,177,90,0.2)]">
         <span className="bg-gradient-to-br from-[#ffe39b] via-[#d6b15a] to-[#8b6a20] bg-clip-text text-[2.5rem] font-black italic leading-none text-transparent">
-          E
+          A
         </span>
       </div>
 
