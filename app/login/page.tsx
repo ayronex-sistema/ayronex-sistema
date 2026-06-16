@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { BrandLogo } from "@/components/brand-logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,7 +41,7 @@ export default function LoginPage() {
         className="w-full max-w-sm rounded-2xl border border-yellow-950/70 bg-zinc-950 p-8 shadow-2xl"
         onSubmit={handleSubmit}
       >
-        <p className="text-lg font-extrabold leading-none text-yellow-400">AYRONEX</p>
+        <BrandLogo showSubtitle />
         <h1 className="mt-8 text-2xl font-extrabold">Acesso ao ERP</h1>
         <p className="mt-2 text-sm text-slate-400">Digite a senha administrativa para continuar.</p>
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { BrandLogo } from "@/components/brand-logo";
 import { useErpData } from "@/hooks/use-erp-data";
 import { useModuleBadges } from "@/hooks/use-module-badges";
 import { useErpTheme } from "@/hooks/use-erp-theme";
@@ -71,11 +72,7 @@ export function ErpShell({ active, children }: ErpShellProps) {
         <section className="min-w-0 flex-1">
           <header className="sticky top-0 z-20 flex min-h-16 flex-col gap-3 border-b border-white/10 bg-black/90 px-4 py-3 backdrop-blur-xl md:flex-row md:items-center md:justify-between lg:px-6">
             <div className="flex items-center gap-3 lg:hidden">
-              <LogoMark />
-              <div>
-                <p className="text-lg font-extrabold leading-none text-[#f5b900]">AYRONEX</p>
-                <p className="mt-1 text-[10px] tracking-[0.18em] text-slate-400">TELECOM & FIELD</p>
-              </div>
+              <BrandLogo compact />
             </div>
 
             <nav className="flex flex-wrap gap-2 lg:hidden">
@@ -120,27 +117,11 @@ export function ErpShell({ active, children }: ErpShellProps) {
 function BrandBlock() {
   return (
     <div className="border-b border-white/10 px-4 py-5">
-      <div className="flex items-center gap-3">
-        <LogoMark />
-        <div>
-          <p className="text-lg font-black leading-none text-[#f5b900]">AYRONEX</p>
-          <p className="mt-1.5 text-[10px] tracking-[0.24em] text-slate-400">TELECOM & FIELD</p>
-        </div>
-      </div>
+      <BrandLogo compact />
       <div className="mt-5 rounded-2xl border border-white/10 bg-black/40 p-3">
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Sistema</p>
         <p className="mt-1 text-sm font-bold text-slate-100">ERP Operacional</p>
       </div>
-    </div>
-  );
-}
-
-function LogoMark() {
-  return (
-    <div className="grid size-11 place-items-center rounded-2xl border border-yellow-500/40 bg-black shadow-[0_0_24px_rgba(245,185,0,0.18)]">
-      <span className="bg-gradient-to-br from-yellow-200 via-yellow-500 to-yellow-800 bg-clip-text text-2xl font-black italic text-transparent">
-        E
-      </span>
     </div>
   );
 }
