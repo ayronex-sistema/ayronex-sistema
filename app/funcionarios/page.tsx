@@ -1,9 +1,11 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { ErpShell } from "@/components/erp-shell";
+import { EmployeeTabbedForm } from "@/components/employee-tabbed-form";
 import { ModuleSpreadsheetActions, type SpreadsheetRow } from "@/components/module-spreadsheet-actions";
 import { createId, useErpData } from "@/hooks/use-erp-data";
+import { formatDateBr } from "@/lib/date";
 import { EMPLOYEE_SHEET_NAME, employeeColumns, normalizeEmployee, type EmployeeColumnKey } from "@/lib/employees";
 import type { Employee, EmployeeStatus } from "@/lib/types";
 
@@ -15,17 +17,6 @@ type EmployeesApiResponse = {
 };
 
 type StatusFilter = "TODOS" | EmployeeStatus;
-
-const yesNoFields = new Set<EmployeeColumnKey>([
-  "clt",
-  "cracha",
-  "cartaoVrVa",
-  "nrs1035",
-  "possuiNrs",
-  "nrsVencido",
-  "feriasVencidas",
-  "podeTirarFerias",
-]);
 
 const employeeStatusOptions: EmployeeStatus[] = ["ATIVO", "FERIAS", "ATESTADO", "AFASTADO", "INATIVO"];
 
@@ -266,11 +257,11 @@ export default function FuncionariosPage() {
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <SummaryCard helper="Na empresa ativa" icon="👥" label="Total de funcionários" tone="green" value={employees.length.toString()} />
-          <SummaryCard helper={`${percent(activeEmployees, employees.length)}% do total`} icon="👤" label="Ativos" tone="blue" value={activeEmployees.toString()} />
-          <SummaryCard helper={`${teamCount} equipes`} icon="🏢" label="Equipes" tone="yellow" value={teamCount.toString()} />
-          <SummaryCard helper="Podem tirar férias" icon="🏖" label="Em férias" tone="purple" value={vacationReady.toString()} />
-          <SummaryCard helper={`${percent(inactiveEmployees, employees.length)}% do total`} icon="🚫" label="Desligados" tone="red" value={inactiveEmployees.toString()} />
+          <SummaryCard helper="Na empresa ativa" icon="users" label="Total de funcionários" tone="green" value={employees.length.toString()} />
+          <SummaryCard helper={`${percent(activeEmployees, employees.length)}% do total`} icon="user" label="Ativos" tone="blue" value={activeEmployees.toString()} />
+          <SummaryCard helper={`${teamCount} equipes`} icon="building" label="Equipes" tone="yellow" value={teamCount.toString()} />
+          <SummaryCard helper="Podem tirar férias" icon="vacation" label="Em férias" tone="purple" value={vacationReady.toString()} />
+          <SummaryCard helper={`${percent(inactiveEmployees, employees.length)}% do total`} icon="ban" label="Desligados" tone="red" value={inactiveEmployees.toString()} />
         </section>
 
         <ModuleSpreadsheetActions
@@ -283,77 +274,25 @@ export default function FuncionariosPage() {
         />
 
         <section className="rounded-2xl border border-yellow-950/60 bg-zinc-950/80 p-5 shadow-2xl shadow-black/30">
-          <div className="border-b border-white/10 pb-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-yellow-500">Cadastrar</p>
-            <h2 className="mt-2 text-xl font-bold text-white">Novo funcionário</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Formulário completo com os mesmos campos e ordem da planilha de cadastro para {empresaAtiva}.
+          <EmployeeTabbedForm
+            companyName={empresaAtiva}
+            draft={employeeForm}
+            onChange={handleEmployeeFieldChange}
+            onSecondaryAction={() => {
+              setEmployeeForm(createEmptyEmployeeForm());
+              setFormFeedback("");
+            }}
+            onSubmit={handleRegisterEmployee}
+            secondaryLabel="Limpar formulário"
+            submitLabel="Cadastrar funcionário"
+            subtitle={`Formulário organizado por abas para manter o cadastro legível e salvar tudo em uma única requisição para ${empresaAtiva}.`}
+            title="Novo funcionário"
+          />
+          {formFeedback ? (
+            <p className="mt-5 rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200">
+              {formFeedback}
             </p>
-          </div>
-
-          <form className="mt-5 space-y-5" onSubmit={handleRegisterEmployee}>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {employeeColumns.map((column) => (
-                <label className={column.key === "enderecoCompleto" ? "md:col-span-2 xl:col-span-4" : ""} key={column.key}>
-                  <span className="text-sm font-semibold text-slate-300">{column.label}</span>
-                  {column.key === "situacao" ? (
-                    <select
-                      className="mt-2 w-full rounded-xl border border-white/10 bg-black/50 px-3 py-3 text-sm text-white outline-none transition focus:border-yellow-500/60"
-                      onChange={(event) => handleEmployeeFieldChange(column.key, event.target.value)}
-                      value={employeeForm[column.key]}
-                    >
-                      {employeeStatusOptions.map((option) => (
-                        <option key={option} value={option}>{statusLabel(option)}</option>
-                      ))}
-                    </select>
-                  ) : yesNoFields.has(column.key) ? (
-                    <select
-                      className="mt-2 w-full rounded-xl border border-white/10 bg-black/50 px-3 py-3 text-sm text-white outline-none transition focus:border-yellow-500/60"
-                      onChange={(event) => handleEmployeeFieldChange(column.key, event.target.value)}
-                      value={employeeForm[column.key]}
-                    >
-                      <option value="">Selecione</option>
-                      <option value="SIM">SIM</option>
-                      <option value="NÃO">NÃO</option>
-                      <option value="N/A">N/A</option>
-                    </select>
-                  ) : (
-                    <input
-                      className="mt-2 w-full rounded-xl border border-white/10 bg-black/50 px-3 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-yellow-500/60"
-                      onChange={(event) => handleEmployeeFieldChange(column.key, event.target.value)}
-                      placeholder={getEmployeePlaceholder(column.key)}
-                      value={employeeForm[column.key]}
-                    />
-                  )}
-                </label>
-              ))}
-            </div>
-
-            {formFeedback ? (
-              <p className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200">
-                {formFeedback}
-              </p>
-            ) : null}
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <button
-                className="rounded-xl bg-yellow-500 px-5 py-3 text-sm font-extrabold text-black transition hover:bg-yellow-400"
-                type="submit"
-              >
-                Cadastrar funcionário
-              </button>
-              <button
-                className="rounded-xl border border-white/10 px-5 py-3 text-sm font-bold text-slate-300 transition hover:border-yellow-500/40 hover:bg-yellow-500/10 hover:text-yellow-300"
-                onClick={() => {
-                  setEmployeeForm(createEmptyEmployeeForm());
-                  setFormFeedback("");
-                }}
-                type="button"
-              >
-                Limpar formulário
-              </button>
-            </div>
-          </form>
+          ) : null}
         </section>
 
         <section className="rounded-2xl border border-yellow-950/60 bg-zinc-950/80 p-5 shadow-2xl shadow-black/30">
@@ -455,7 +394,7 @@ export default function FuncionariosPage() {
                       <td className="px-4 py-4 text-slate-300">{employee.equipe || "SEM EQUIPE"}</td>
                       <td className="px-4 py-4 text-slate-300">{employee.projeto || "Não informado"}</td>
                       <td className="px-4 py-4"><StatusBadge status={employee.situacao} /></td>
-                      <td className="px-4 py-4 text-slate-300">{employee.admissao || employee.dataAdmissao || "-"}</td>
+                      <td className="px-4 py-4 text-slate-300">{formatDateBr(employee.admissao || employee.dataAdmissao) || "-"}</td>
                       <td className="px-4 py-4">
                         <div className="flex justify-end gap-2">
                           <ActionButton label="Ver" onClick={() => setViewEmployee(employee)} tone="view" />
@@ -466,7 +405,7 @@ export default function FuncionariosPage() {
                             title={employee.situacao === "ATIVO" ? "Marcar como inativo" : "Marcar como ativo"}
                             type="button"
                           >
-                            🗑
+                            ðŸ—‘
                           </button>
                         </div>
                       </td>
@@ -509,7 +448,7 @@ function SummaryCard({
   tone = "default",
 }: {
   helper: string;
-  icon: string;
+  icon: SummaryIconName;
   label: string;
   value: string;
   tone?: "default" | "green" | "slate" | "yellow" | "blue" | "purple" | "red";
@@ -526,7 +465,9 @@ function SummaryCard({
 
   return (
     <article className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black p-5 shadow-2xl shadow-black/30">
-      <div className={`grid size-12 place-items-center rounded-xl text-xl ${tones[tone][1]}`}>{icon}</div>
+      <div className={`grid size-12 place-items-center rounded-xl ${tones[tone][1]}`}>
+        <SummaryIcon name={icon} tone={tone} />
+      </div>
       <div>
         <p className={`text-xs font-extrabold uppercase tracking-[0.12em] ${tones[tone][0]}`}>{label}</p>
         <p className="mt-1 text-3xl font-extrabold text-white">{value}</p>
@@ -584,12 +525,42 @@ function StatusBadge({ status }: { status: EmployeeStatus }) {
 
 function ActionButton({ label, onClick, tone }: { label: string; onClick: () => void; tone: "view" | "edit" }) {
   const styles = tone === "view" ? "bg-slate-500/10 text-slate-300" : "bg-yellow-500/10 text-yellow-300";
-  const icon = tone === "view" ? "👁" : "✎";
 
   return (
     <button className={`grid size-9 place-items-center rounded-lg transition hover:bg-white/10 ${styles}`} onClick={onClick} title={label} type="button">
-      {icon}
+      <ActionIcon tone={tone} />
     </button>
+  );
+}
+
+type SummaryIconName = "users" | "user" | "building" | "vacation" | "ban";
+
+function SummaryIcon({ name, tone }: { name: SummaryIconName; tone: string }) {
+  const stroke = tone === "yellow" ? "#fde047" : tone === "blue" ? "#93c5fd" : tone === "purple" ? "#d8b4fe" : tone === "red" ? "#fca5a5" : "#86efac";
+
+  const icons: Record<SummaryIconName, ReactNode> = {
+    users: <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8m10 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />, 
+    user: <path d="M16 21v-2a4 4 0 0 0-4-4H12a4 4 0 0 0-4 4v2m8-12a4 4 0 1 0-8 0 4 4 0 0 0 8 0" />,
+    building: <path d="M3 21h18M6 21V7l6-3v17m0 0h6V10l-6-3M9 21v-4h2v4m2-10h2m-4 4h2" />,
+    vacation: <path d="M5 19h14M6 17c0-4 3-7 6-7s6 3 6 7M12 3v4m4.5-2.5L14.7 6.3M7.5 4.5 9.3 6.3" />, 
+    ban: <path d="m4 4 16 16M12 21a9 9 0 1 0-9-9 9 9 0 0 0 9 9Z" />,
+  };
+
+  return (
+    <svg aria-hidden="true" className="size-5" fill="none" stroke={stroke} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+      {icons[name]}
+    </svg>
+  );
+}
+
+function ActionIcon({ tone }: { tone: "view" | "edit" }) {
+  const stroke = tone === "view" ? "#cbd5e1" : "#fcd34d";
+  const path = tone === "view" ? <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Zm9.5 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /> : <path d="M4 20h4l10-10-4-4L4 16v4Zm11-11 4 4" />;
+
+  return (
+    <svg aria-hidden="true" className="size-4" fill="none" stroke={stroke} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+      {path}
+    </svg>
   );
 }
 
@@ -615,33 +586,17 @@ function createEmptyEmployeeForm(): Record<EmployeeColumnKey, string> {
   );
 }
 
-function getEmployeePlaceholder(key: EmployeeColumnKey) {
-  const placeholders: Partial<Record<EmployeeColumnKey, string>> = {
-    re: "Ex: 33",
-    funcionario: "Nome completo",
-    cargo: "Ex: OFICIAL DE REDE",
-    seguimento: "Ex: FTTA",
-    equipe: "Ex: LFO-BRUNO J",
-    projeto: "Ex: VIVO",
-    vrDia: "Ex: 32,63",
-    vt: "Ex: 0",
-    salario: "Ex: R$ 2.009,11",
-    carro: "Ex: GOL",
-    placa: "Ex: ABC1D23",
-    admissao: "Ex: 09/06/2026",
-    vencimentoContrato45: "Ex: 24/07/2026",
-    vencimentoContrato90: "Ex: 07/09/2026",
-    eSocial: "Ex: BJ60",
-    cpf: "000.000.000-00",
-    rg: "00.000.000-0",
-    nomeMae: "Nome da mãe",
-    nomePai: "Nome do pai",
-    dataNascimento: "Ex: 01/01/1990",
-    enderecoCompleto: "Rua, número, complemento, bairro, cidade, CEP",
-    vencimentoNrs: "Ex: 09/06/2027",
-  };
-
-  return placeholders[key] ?? "";
+function mapEmployeeToForm(employee: Employee): Record<EmployeeColumnKey, string> {
+  return employeeColumns.reduce(
+    (form, column) => ({
+      ...form,
+      [column.key]:
+        employee[column.key] ??
+        (column.key === "situacao" ? employee.situacao : "") ??
+        "",
+    }),
+    {} as Record<EmployeeColumnKey, string>,
+  );
 }
 
 function getImportedValue(row: SpreadsheetRow, aliases: string[]) {
@@ -681,6 +636,7 @@ function getEmployeeMergeKey(employee: Employee) {
   return `${employee.empresa}|${employee.re || employee.cpf || employee.funcionario}`.toUpperCase();
 }
 
+
 function EmployeeViewModal({ employee, onClose }: { employee: Employee; onClose: () => void }) {
   const details = [
     ["RE", employee.re],
@@ -689,7 +645,11 @@ function EmployeeViewModal({ employee, onClose }: { employee: Employee; onClose:
     ["Equipe", employee.equipe],
     ["Projeto", employee.projeto],
     ["Status", statusLabel(employee.situacao)],
-    ["Admissão", employee.admissao || employee.dataAdmissao],
+    ["Admissão", formatDateBr(employee.admissao || employee.dataAdmissao)],
+    ["Nascimento", formatDateBr(employee.dataNascimento)],
+    ["Contrato 45 dias", formatDateBr(employee.vencimentoContrato45)],
+    ["Contrato 90 dias", formatDateBr(employee.vencimentoContrato90)],
+    ["Vencimento NRS", formatDateBr(employee.vencimentoNrs)],
     ["CPF", employee.cpf],
     ["RG", employee.rg],
     ["VR Dia", employee.vrDia],
@@ -724,54 +684,39 @@ function EmployeeEditModal({
 
   return (
     <Modal title="Editar funcionário" onClose={onClose}>
-      <div className="grid gap-4 md:grid-cols-2">
-        <EditField label="Funcionário" onChange={(value) => setDraft((current) => ({ ...current, funcionario: value, nome: value }))} value={draft.funcionario} />
-        <EditField label="Cargo" onChange={(value) => setDraft((current) => ({ ...current, cargo: value }))} value={draft.cargo} />
-        <EditField label="Equipe" onChange={(value) => setDraft((current) => ({ ...current, equipe: value }))} value={draft.equipe} />
-        <EditField label="Projeto" onChange={(value) => setDraft((current) => ({ ...current, projeto: value }))} value={draft.projeto} />
-        <label>
-          <span className="text-sm font-bold text-slate-300">Status</span>
-          <select
-            className="mt-2 w-full rounded-xl border border-white/10 bg-black px-3 py-3 text-sm text-white outline-none focus:border-yellow-500"
-            onChange={(event) => setDraft((current) => ({ ...current, situacao: event.target.value as EmployeeStatus }))}
-            value={draft.situacao}
-          >
-            {employeeStatusOptions.map((status) => (
-              <option key={status} value={status}>{statusLabel(status)}</option>
-            ))}
-          </select>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {employeeStatusOptions.map((status) => {
-              const selected = draft.situacao === status;
+      <EmployeeTabbedForm
+        companyName={employee.empresa}
+        draft={mapEmployeeToForm(draft)}
+        onChange={(key, value) =>
+          setDraft((current) => {
+            const next = { ...current, [key]: value } as Employee;
 
-              return (
-                <button
-                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
-                    selected
-                      ? "border-yellow-500 bg-yellow-500 text-black"
-                      : "border-white/10 bg-black text-slate-300 hover:border-yellow-500/50 hover:text-yellow-300"
-                  }`}
-                  key={status}
-                  onClick={() => setDraft((current) => ({ ...current, situacao: status }))}
-                  type="button"
-                >
-                  {statusLabel(status)}
-                </button>
-              );
-            })}
-          </div>
-        </label>
-        <EditField label="Admissão" onChange={(value) => setDraft((current) => ({ ...current, admissao: value, dataAdmissao: value }))} value={draft.admissao || draft.dataAdmissao} />
-      </div>
-      <div className="mt-5 flex justify-end gap-3">
-        <button className="rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-slate-300" onClick={onClose} type="button">Cancelar</button>
-        <button className="rounded-xl bg-yellow-500 px-4 py-2 text-sm font-black text-black" onClick={() => onSave(draft)} type="button">Salvar alterações</button>
-      </div>
+            if (key === "funcionario") {
+              next.nome = value;
+            }
+
+            if (key === "admissao") {
+              next.dataAdmissao = value;
+            }
+
+            return next;
+          })
+        }
+        onSecondaryAction={onClose}
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSave(draft);
+        }}
+        secondaryLabel="Cancelar"
+        submitLabel="Salvar alterações"
+        subtitle="Edite os dados em abas separadas para manter o formulário legível e evitar erros."
+        title="Editar funcionário"
+      />
     </Modal>
   );
 }
 
-function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4">
       <section className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-3xl border border-white/10 bg-zinc-950 p-6 shadow-2xl shadow-black">
@@ -782,19 +727,6 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
         {children}
       </section>
     </div>
-  );
-}
-
-function EditField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return (
-    <label>
-      <span className="text-sm font-bold text-slate-300">{label}</span>
-      <input
-        className="mt-2 w-full rounded-xl border border-white/10 bg-black px-3 py-3 text-sm text-white outline-none focus:border-yellow-500"
-        onChange={(event) => onChange(event.target.value)}
-        value={value}
-      />
-    </label>
   );
 }
 
@@ -809,3 +741,6 @@ function statusLabel(status: EmployeeStatus) {
 
   return labels[status];
 }
+
+
+

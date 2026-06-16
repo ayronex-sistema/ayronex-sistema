@@ -1,4 +1,4 @@
-import { DEFAULT_COMPANY } from "./companies";
+﻿import { DEFAULT_COMPANY } from "./companies";
 import type { CompanyName, Employee, EmployeeStatus } from "./types";
 
 export const EMPLOYEE_SHEET_ID = "1rvbh3SrlgUJOQEHJcB4sIfiLJ4DXSRNOrgoJFX6Q_oY";
@@ -366,20 +366,21 @@ function normalizeHeader(value?: string) {
 
 function fixEncoding(value: string) {
   return value
+    .replaceAll("ÃƒÂ§", "ç")
+    .replaceAll("ÃƒÂ£", "ã")
+    .replaceAll("ÃƒÂ¡", "á")
+    .replaceAll("ÃƒÂ¢", "â")
+    .replaceAll("ÃƒÂ©", "é")
+    .replaceAll("ÃƒÂª", "ê")
+    .replaceAll("ÃƒÂ­", "í")
+    .replaceAll("ÃƒÂ³", "ó")
+    .replaceAll("ÃƒÂ´", "ô")
+    .replaceAll("ÃƒÂº", "ú")
     .replaceAll("ÃƒO", "ÃO")
     .replaceAll("Ãƒo", "ão")
-    .replaceAll("ÃƒA", "Ã")
-    .replaceAll("Ãƒa", "ã")
-    .replaceAll("Ãƒ", "Ã")
-    .replaceAll("Ã§", "ç")
-    .replaceAll("Ã£", "ã")
-    .replaceAll("Ã¡", "á")
-    .replaceAll("Ã¢", "â")
-    .replaceAll("Ã©", "é")
-    .replaceAll("Ãª", "ê")
-    .replaceAll("Ã­", "í")
-    .replaceAll("Ã³", "ó")
-    .replaceAll("Ã´", "ô")
-    .replaceAll("Ãº", "ú")
-    .replaceAll("NÃO", "NÃO");
+    .replaceAll("NÃƒO", "NÃO")
+    .replaceAll("SÃƒO", "SÃO")
+    .replaceAll("GIRÃƒO", "GIRÃO")
+    .replaceAll("TABOÃƒO", "TABOÃO");
 }
+

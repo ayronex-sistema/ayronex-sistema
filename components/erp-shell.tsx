@@ -3,27 +3,46 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useErpData } from "@/hooks/use-erp-data";
+import { useModuleBadges } from "@/hooks/use-module-badges";
 import { useErpTheme } from "@/hooks/use-erp-theme";
 import { companies } from "@/lib/companies";
 import type { CompanyName } from "@/lib/types";
 
 type ErpShellProps = {
-  active: "dashboard" | "operacao" | "indicadores" | "funcionarios" | "financeiro" | "configuracoes" | "seguranca";
+  active:
+    | "dashboard"
+    | "modulos"
+    | "operacao"
+    | "whatsapp"
+    | "indicadores"
+    | "funcionarios"
+    | "materiais"
+    | "vr"
+    | "financeiro"
+    | "configuracoes"
+    | "seguranca";
   children: ReactNode;
 };
 
 const navigation = [
   { key: "dashboard", label: "Dashboard", href: "/dashboard", icon: "home" },
-  { key: "operacao", label: "Operação", href: "/operacao", icon: "activity" },
+  { key: "modulos", label: "Módulos", href: "/modulos", icon: "grid" },
+  { key: "operacao", label: "Produção", href: "/operacao", icon: "activity" },
+  { key: "whatsapp", label: "WhatsApp", href: "/whatsapp", icon: "message" },
   { key: "indicadores", label: "Indicadores", href: "/indicadores", icon: "chart" },
   { key: "funcionarios", label: "Funcionários", href: "/funcionarios", icon: "users" },
+  { key: "materiais", label: "Materiais", href: "/materiais", icon: "box" },
+  { key: "vr", label: "VR", href: "/vr", icon: "wallet" },
   { key: "financeiro", label: "Financeiro", href: "/financeiro", icon: "wallet" },
   { key: "seguranca", label: "Segurança", href: "/seguranca", icon: "lock" },
   { key: "configuracoes", label: "Configurações", href: "/configuracoes", icon: "settings" },
 ] as const;
 
+type NavigationKey = (typeof navigation)[number]["key"];
+
 export function ErpShell({ active, children }: ErpShellProps) {
   const { empresaAtiva, setEmpresaAtiva } = useErpData();
+  const badges = useModuleBadges();
   useErpTheme();
 
   return (
@@ -37,12 +56,12 @@ export function ErpShell({ active, children }: ErpShellProps) {
             <CompanySelector empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
 
             {navigation.map((item) => (
-              <NavLink active={active === item.key} href={item.href} icon={item.icon} key={item.key} label={item.label} />
+              <NavLink active={active === item.key} badge={badges[item.key as NavigationKey]} href={item.href} icon={item.icon} key={item.key} label={item.label} />
             ))}
           </nav>
 
           <form action="/api/auth/logout" method="post" className="px-3 pb-4">
-            <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-100">
+            <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-100" type="submit">
               <MenuIcon name="logout" />
               Sair
             </button>
@@ -72,6 +91,11 @@ export function ErpShell({ active, children }: ErpShellProps) {
                 >
                   <MenuIcon name={item.icon} />
                   {item.label}
+                  {badges[item.key as NavigationKey] ? (
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-yellow-500 px-1.5 py-0.5 text-[10px] font-black text-black">
+                      {badges[item.key as NavigationKey]}
+                    </span>
+                  ) : null}
                 </Link>
               ))}
             </nav>
@@ -115,13 +139,25 @@ function LogoMark() {
   return (
     <div className="grid size-11 place-items-center rounded-2xl border border-yellow-500/40 bg-black shadow-[0_0_24px_rgba(245,185,0,0.18)]">
       <span className="bg-gradient-to-br from-yellow-200 via-yellow-500 to-yellow-800 bg-clip-text text-2xl font-black italic text-transparent">
-        A
+        E
       </span>
     </div>
   );
 }
 
-function NavLink({ active, href, icon, label }: { active: boolean; href: string; icon: string; label: string }) {
+function NavLink({
+  active,
+  badge,
+  href,
+  icon,
+  label,
+}: {
+  active: boolean;
+  badge?: number;
+  href: string;
+  icon: string;
+  label: string;
+}) {
   return (
     <Link
       className={`group flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold transition ${
@@ -135,7 +171,10 @@ function NavLink({ active, href, icon, label }: { active: boolean; href: string;
         <MenuIcon name={icon} />
         {label}
       </span>
-      <span className="text-slate-500 group-hover:text-white">›</span>
+      <span className="flex items-center gap-2 text-slate-500 group-hover:text-white">
+        {badge ? <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-yellow-500 px-2 py-0.5 text-[10px] font-black text-black">{badge}</span> : null}
+        <span>›</span>
+      </span>
     </Link>
   );
 }
@@ -173,9 +212,19 @@ function CompanySelector({
 function MenuIcon({ name }: { name: string }) {
   const paths: Record<string, ReactNode> = {
     home: <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
+    grid: (
+      <>
+        <rect x="4" y="4" width="6" height="6" rx="1" />
+        <rect x="14" y="4" width="6" height="6" rx="1" />
+        <rect x="4" y="14" width="6" height="6" rx="1" />
+        <rect x="14" y="14" width="6" height="6" rx="1" />
+      </>
+    ),
     activity: <path d="M4 16h3l2-8 4 12 2-7h5" />,
+    message: <path d="M4 5h16v11H7l-3 3z" />,
     chart: <path d="M4 19V5m0 14h16M8 16v-5m4 5V8m4 8v-7" />,
     users: <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8m10 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />,
+    box: <path d="M21 8.5 12 4 3 8.5v7L12 20l9-4.5z" />,
     wallet: <path d="M3 7h18v13H3zM16 12h3M5 7V5a2 2 0 0 1 2-2h10v4" />,
     lock: <path d="M7 11V7a5 5 0 0 1 10 0v4M5 11h14v10H5z" />,
     settings: <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm0-13v3m0 13v3m9.5-9.5h-3m-13 0h-3m16.02-6.52-2.12 2.12M7.6 16.4l-2.12 2.12m13.04 0-2.12-2.12M7.6 7.6 5.48 5.48" />,
