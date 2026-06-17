@@ -3,6 +3,10 @@ export type BasicAuthCredentials = {
   password: string;
 } | null;
 
+export function isChecklistPublicMode() {
+  return process.env.CHECKLIST_PUBLIC_MODE === "true";
+}
+
 export function decodeBasicAuth(headerValue: string | null): BasicAuthCredentials {
   if (!headerValue?.startsWith("Basic ")) {
     return null;
@@ -27,6 +31,10 @@ export function decodeBasicAuth(headerValue: string | null): BasicAuthCredential
 }
 
 export function isBasicAuthValid(headerValue: string | null) {
+  if (isChecklistPublicMode()) {
+    return true;
+  }
+
   const expectedEmail = process.env.FISCAL_USER_EMAIL;
   const expectedPassword = process.env.FISCAL_USER_PASSWORD;
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isBasicAuthValid } from "@/lib/basic-auth";
+import { isBasicAuthValid, isChecklistPublicMode } from "@/lib/basic-auth";
 
 const REALM = "Checklist Ayronex";
 
@@ -17,6 +17,10 @@ export function middleware(request: NextRequest) {
   const isProtectedRoute = pathname.startsWith("/checklist");
 
   if (!isProtectedRoute) {
+    return NextResponse.next();
+  }
+
+  if (isChecklistPublicMode()) {
     return NextResponse.next();
   }
 
