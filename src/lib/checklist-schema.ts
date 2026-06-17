@@ -4,7 +4,7 @@ export const checklistFormSchema = z.object({
   company: z.enum(["TCI", "DCF", "NEW_TELECOM"]),
   employeeId: z.string().min(1, "Selecione um funcionário."),
   inspectorName: z.string().min(2, "Informe o nome do fiscal."),
-  observations: z.string().max(2000).optional().default(""),
+  observations: z.string().max(2000).default(""),
   declarationAccept: z.boolean().refine((value) => value === true, "Confirme a declaração de aceite."),
   signature: z.string().min(32, "Assine para continuar."),
   epis: z
