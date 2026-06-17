@@ -1,5 +1,5 @@
 ﻿import { cn } from "@/lib/utils";
-import type { ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
 export function Button({ className, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
@@ -11,6 +11,14 @@ export function Button({ className, ...props }: ButtonHTMLAttributes<HTMLButtonE
       {...props}
     />
   );
+}
+
+export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("rounded-3xl border border-zinc-800 bg-zinc-900/70", className)} {...props} />;
+}
+
+export function Badge({ className, ...props }: HTMLAttributes<HTMLSpanElement>) {
+  return <span className={cn("inline-flex rounded-full px-2 py-1 text-xs font-medium", className)} {...props} />;
 }
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
