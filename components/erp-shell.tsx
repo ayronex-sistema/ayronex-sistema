@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { useErpData } from "@/hooks/use-erp-data";
@@ -47,6 +48,21 @@ export function ErpShell({ active, children }: ErpShellProps) {
   const { empresaAtiva, setEmpresaAtiva } = useErpData();
   const badges = useModuleBadges();
   useErpTheme();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileMenuOpen]);
 
   return (
     <main className="min-h-screen bg-black text-slate-50">
@@ -72,46 +88,98 @@ export function ErpShell({ active, children }: ErpShellProps) {
         </aside>
 
         <section className="min-w-0 flex-1">
-          <header className="sticky top-0 z-20 flex min-h-16 flex-col gap-3 border-b border-white/10 bg-black/90 px-4 py-3 backdrop-blur-xl md:flex-row md:items-center md:justify-between lg:px-6">
-            <div className="flex items-center gap-3 lg:hidden">
+          <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-white/10 bg-black/90 px-4 py-3 backdrop-blur-xl lg:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                className="inline-flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-white transition hover:bg-white/[0.06] lg:hidden"
+                aria-label="Abrir menu"
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <MenuIcon name="menu" />
+              </button>
               <BrandLogo compact />
             </div>
 
-            <nav className="flex flex-wrap gap-2 lg:hidden">
-              {navigation.map((item) => (
-                <Link
-                  className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold ${
-                    active === item.key
-                      ? "border border-white/10 bg-white/5 text-white"
-                      : "bg-transparent text-white"
-                  }`}
-                  href={item.href}
-                  key={item.key}
-                >
-                  <MenuIcon name={item.icon} />
-                  {item.label}
-                  {badges[item.key as NavigationKey] ? (
-                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-yellow-500 px-1.5 py-0.5 text-[10px] font-black text-black">
-                      {badges[item.key as NavigationKey]}
-                    </span>
-                  ) : null}
-                </Link>
-              ))}
-            </nav>
-
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="hidden text-right md:block">
+              <p className="text-sm font-bold">Administrador</p>
+              <p className="mt-1 text-xs text-slate-400">admin@ayronex.com</p>
+            </div>
+            <div className="hidden lg:block">
               <CompanySelector compact empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
-
-              <div className="hidden text-right md:block">
-                <p className="text-sm font-bold">Administrador</p>
-                <p className="mt-1 text-xs text-slate-400">admin@ayronex.com</p>
-              </div>
             </div>
           </header>
 
-          <div className="px-4 py-6 lg:px-6">{children}</div>
+          <div className="px-3 py-4 sm:px-4 sm:py-6 lg:px-6">{children}</div>
         </section>
       </div>
+
+      <div
+        className={`fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity lg:hidden ${
+          mobileMenuOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-[86vw] max-w-sm border-r border-white/10 bg-black shadow-2xl shadow-black/40 transition-transform duration-300 lg:hidden ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+        aria-hidden={!mobileMenuOpen}
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+            <BrandLogo compact />
+            <button
+              className="inline-flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-white transition hover:bg-white/[0.06]"
+              aria-label="Fechar menu"
+              type="button"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <MenuIcon name="close" />
+            </button>
+          </div>
+
+          <div className="border-b border-white/10 px-4 py-4">
+            <CompanySelector empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
+          </div>
+
+          <nav className="flex-1 overflow-y-auto px-3 py-4">
+            {navigation.map((item) => (
+              <Link
+                className={`group mb-1 flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                  active === item.key
+                    ? "border border-white/10 bg-white/[0.03] text-white"
+                    : "border border-transparent bg-transparent text-white hover:border-white/10 hover:bg-white/[0.03]"
+                }`}
+                href={item.href}
+                key={item.key}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="flex items-center gap-3">
+                  <MenuIcon name={item.icon} />
+                  {item.label}
+                </span>
+                <span className="flex items-center gap-2 text-slate-500 group-hover:text-white">
+                  {badges[item.key as NavigationKey] ? (
+                    <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-yellow-500 px-2 py-0.5 text-[10px] font-black text-black">
+                      {badges[item.key as NavigationKey]}
+                    </span>
+                  ) : null}
+                  <span>›</span>
+                </span>
+              </Link>
+            ))}
+          </nav>
+
+          <form action="/api/auth/logout" method="post" className="border-t border-white/10 px-3 pb-4 pt-4">
+            <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-100" type="submit">
+              <MenuIcon name="logout" />
+              Sair
+            </button>
+          </form>
+        </div>
+      </aside>
     </main>
   );
 }
@@ -206,6 +274,19 @@ function MenuIcon({ name }: { name: string }) {
     activity: <path d="M4 16h3l2-8 4 12 2-7h5" />,
     message: <path d="M4 5h16v11H7l-3 3z" />,
     chart: <path d="M4 19V5m0 14h16M8 16v-5m4 5V8m4 8v-7" />,
+    menu: (
+      <>
+        <path d="M4 7h16" />
+        <path d="M4 12h16" />
+        <path d="M4 17h16" />
+      </>
+    ),
+    close: (
+      <>
+        <path d="M6 6 18 18" />
+        <path d="M18 6 6 18" />
+      </>
+    ),
     calculator: (
       <>
         <rect x="5" y="4" width="14" height="16" rx="2" />

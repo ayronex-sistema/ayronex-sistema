@@ -209,7 +209,7 @@ export default function OperacaoPage() {
 
         {activeTab === "producao" ? (
           <>
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
               <ProductionStatCard active={filter === "all"} count={productionStats.all} label="Todos" onClick={() => setFilter("all")} />
               <ProductionStatCard active={filter === "OK"} count={productionStats.ok} label="OK" onClick={() => setFilter("OK")} />
               <ProductionStatCard active={filter === "Pendente"} count={productionStats.pending} label="Pendente" onClick={() => setFilter("Pendente")} />
@@ -425,15 +425,15 @@ function ProductionStatCard({
 }) {
   return (
     <button
-      className={`rounded-xl border p-5 text-left transition hover:-translate-y-0.5 hover:border-yellow-500/60 ${
+      className={`rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-yellow-500/60 sm:p-5 ${
         active ? "ring-2 ring-yellow-500/50" : ""
       } border-white/10 bg-zinc-950`}
       onClick={onClick}
       type="button"
     >
-      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</p>
-      <strong className="mt-5 block text-[2rem] font-black tracking-tight text-white">{count}</strong>
-      <p className="mt-2 text-sm text-yellow-400">Clique para filtrar</p>
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 sm:text-[11px]">{label}</p>
+      <strong className="mt-4 block text-2xl font-black tracking-tight text-white sm:mt-5 sm:text-[2rem]">{count}</strong>
+      <p className="mt-2 text-xs text-yellow-400 sm:text-sm">Clique para filtrar</p>
     </button>
   );
 }
