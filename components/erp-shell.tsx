@@ -48,7 +48,18 @@ export function ErpShell({ active, children }: ErpShellProps) {
   const { empresaAtiva, setEmpresaAtiva } = useErpData();
   const badges = useModuleBadges();
   useErpTheme();
+  const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
+    const syncMode = () => setIsMobile(mediaQuery.matches);
+
+    syncMode();
+    mediaQuery.addEventListener("change", syncMode);
+
+    return () => mediaQuery.removeEventListener("change", syncMode);
+  }, []);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -68,24 +79,26 @@ export function ErpShell({ active, children }: ErpShellProps) {
     <main className="min-h-screen bg-black text-slate-50">
       <div className="pointer-events-none fixed inset-0 bg-black" />
       <div className="relative flex min-h-screen">
-        <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-black shadow-2xl shadow-black/40 lg:flex lg:flex-col">
-          <BrandBlock />
+        {!isMobile ? (
+          <aside className="w-64 shrink-0 border-r border-white/10 bg-black shadow-2xl shadow-black/40 flex flex-col">
+            <BrandBlock />
 
-          <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
-            <CompanySelector empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
+            <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+              <CompanySelector empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
 
-            {navigation.map((item) => (
-              <NavLink active={active === item.key} badge={badges[item.key as NavigationKey]} href={item.href} icon={item.icon} key={item.key} label={item.label} />
-            ))}
-          </nav>
+              {navigation.map((item) => (
+                <NavLink active={active === item.key} badge={badges[item.key as NavigationKey]} href={item.href} icon={item.icon} key={item.key} label={item.label} />
+              ))}
+            </nav>
 
-          <form action="/api/auth/logout" method="post" className="px-3 pb-4">
-            <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-100" type="submit">
-              <MenuIcon name="logout" />
-              Sair
-            </button>
-          </form>
-        </aside>
+            <form action="/api/auth/logout" method="post" className="px-3 pb-4">
+              <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-100" type="submit">
+                <MenuIcon name="logout" />
+                Sair
+              </button>
+            </form>
+          </aside>
+        ) : null}
 
         <section className="min-w-0 flex-1">
           <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-white/10 bg-black/90 px-4 py-3 backdrop-blur-xl lg:px-6">
@@ -114,19 +127,22 @@ export function ErpShell({ active, children }: ErpShellProps) {
         </section>
       </div>
 
-      <div
-        className={`fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity lg:hidden ${
-          mobileMenuOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
-        }`}
-        onClick={() => setMobileMenuOpen(false)}
-      />
+      {isMobile ? (
+        <div
+          className={`fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity ${
+            mobileMenuOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+          }`}
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      ) : null}
 
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[86vw] max-w-sm border-r border-white/10 bg-black shadow-2xl shadow-black/40 transition-transform duration-300 lg:hidden ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-        aria-hidden={!mobileMenuOpen}
-      >
+      {isMobile ? (
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 w-[86vw] max-w-sm border-r border-white/10 bg-black shadow-2xl shadow-black/40 transition-transform duration-300 ${
+            mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+          aria-hidden={!mobileMenuOpen}
+        >
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
             <BrandLogo compact />
@@ -179,7 +195,8 @@ export function ErpShell({ active, children }: ErpShellProps) {
             </button>
           </form>
         </div>
-      </aside>
+        </aside>
+      ) : null}
     </main>
   );
 }
