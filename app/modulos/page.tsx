@@ -47,6 +47,13 @@ const modules = [
     description: "Entradas, despesas, saldo e previsões do caixa por empresa.",
   },
   {
+    href: "/previa-financeira",
+    title: "Prévia financeira",
+    icon: "⌦",
+    color: "border-yellow-500/60 text-yellow-300",
+    description: "Faturamento estimado, custos operacionais e lucro projetado em tempo real.",
+  },
+  {
     href: "/indicadores",
     title: "Indicadores",
     icon: "▤",

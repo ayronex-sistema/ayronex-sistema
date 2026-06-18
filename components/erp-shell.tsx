@@ -14,11 +14,12 @@ type ErpShellProps = {
     | "dashboard"
     | "modulos"
     | "operacao"
-    | "whatsapp"
-    | "indicadores"
-    | "funcionarios"
-    | "materiais"
-    | "vr"
+  | "whatsapp"
+  | "indicadores"
+  | "previafinanceira"
+  | "funcionarios"
+  | "materiais"
+  | "vr"
     | "financeiro"
     | "configuracoes"
     | "seguranca";
@@ -31,6 +32,7 @@ const navigation = [
   { key: "operacao", label: "Produção", href: "/operacao", icon: "activity" },
   { key: "whatsapp", label: "WhatsApp", href: "/whatsapp", icon: "message" },
   { key: "indicadores", label: "Indicadores", href: "/indicadores", icon: "chart" },
+  { key: "previafinanceira", label: "Prévia financeira", href: "/previa-financeira", icon: "calculator" },
   { key: "funcionarios", label: "Funcionários", href: "/funcionarios", icon: "users" },
   { key: "materiais", label: "Materiais", href: "/materiais", icon: "box" },
   { key: "vr", label: "VR", href: "/vr", icon: "wallet" },
@@ -204,6 +206,12 @@ function MenuIcon({ name }: { name: string }) {
     activity: <path d="M4 16h3l2-8 4 12 2-7h5" />,
     message: <path d="M4 5h16v11H7l-3 3z" />,
     chart: <path d="M4 19V5m0 14h16M8 16v-5m4 5V8m4 8v-7" />,
+    calculator: (
+      <>
+        <rect x="5" y="4" width="14" height="16" rx="2" />
+        <path d="M8 8h8M8 12h2m4 0h2M8 16h2m4 0h2" />
+      </>
+    ),
     users: <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8m10 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />,
     box: <path d="M21 8.5 12 4 3 8.5v7L12 20l9-4.5z" />,
     wallet: <path d="M3 7h18v13H3zM16 12h3M5 7V5a2 2 0 0 1 2-2h10v4" />,

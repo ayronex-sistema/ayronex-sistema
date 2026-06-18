@@ -33,7 +33,7 @@ type QuickItem = {
   href: string;
   description: string;
   badge: number;
-  icon: "production" | "finance" | "chat" | "users" | "materials" | "vr";
+  icon: "production" | "finance" | "chat" | "users" | "materials" | "vr" | "calculator";
 };
 
 const comparisonMetrics: Array<{ metric: ComparisonMetric; label: string }> = [
@@ -78,6 +78,22 @@ export default function DashboardPage() {
             </p>
           </div>
         </header>
+
+        <Link
+          className="group flex items-center gap-4 rounded-[1.35rem] border border-white/10 bg-black px-4 py-4 transition hover:-translate-y-0.5 hover:border-yellow-500/40 hover:bg-yellow-500/5"
+          href="/previa-financeira"
+        >
+          <div className="grid size-14 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.03] text-yellow-300">
+            <QuickIcon name="calculator" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg font-black tracking-tight text-white group-hover:text-yellow-200">PRÉVIA FINANCEIRA</p>
+            <p className="mt-1 max-w-3xl text-sm text-slate-400">
+              Faturamento estimado, custos operacionais e lucro projetado em tempo real.
+            </p>
+          </div>
+          <span className="ml-auto text-xl text-slate-500 transition group-hover:text-white">›</span>
+        </Link>
 
         <AlertCenter alerts={alerts} />
 
@@ -328,6 +344,12 @@ function QuickIcon({ name }: { name: QuickIconName }) {
     users: <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8m10 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />,
     materials: <path d="M21 8.5 12 4 3 8.5v7L12 20l9-4.5z" />,
     vr: <path d="M3 7h18v13H3zM16 12h3M5 7V5a2 2 0 0 1 2-2h10v4" />,
+    calculator: (
+      <>
+        <rect x="5" y="4" width="14" height="16" rx="2" />
+        <path d="M8 8h8M8 12h2m4 0h2M8 16h2m4 0h2" />
+      </>
+    ),
   };
 
   return (
@@ -537,6 +559,13 @@ function buildQuickItems(dataByCompany: ErpData, resumo: ReturnType<typeof calcu
     { title: "Funcionários", href: "/funcionarios", description: "Cadastro, status e movimentações.", badge: employeesPending, icon: "users" },
     { title: "Materiais", href: "/materiais", description: "Estoque, edição e consumo por operação.", badge: materialPending, icon: "materials" },
     { title: "VR", href: "/vr", description: "Vale refeição com acompanhamento diário.", badge: vrPending, icon: "vr" },
+    {
+      title: "Prévia financeira",
+      href: "/previa-financeira",
+      description: "Faturamento estimado, custos operacionais e lucro projetado em tempo real.",
+      badge: financePending,
+      icon: "calculator",
+    },
   ];
 }
 

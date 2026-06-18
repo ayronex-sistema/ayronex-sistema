@@ -22,6 +22,7 @@ export function useModuleBadges() {
       operacao: pendingProduction,
       whatsapp: pendingWhatsapp,
       indicadores: pendingProduction + pendingFinance + pendingWhatsapp,
+      previafinanceira: pendingFinance > 0 ? pendingFinance : 0,
       funcionarios: pendingEmployees,
       materiais: lowStockMaterials,
       vr: pendingVr,
