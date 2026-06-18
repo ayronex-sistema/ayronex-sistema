@@ -21,7 +21,7 @@ type StatusFilter = "TODOS" | EmployeeStatus;
 const employeeStatusOptions: EmployeeStatus[] = ["ATIVO", "FERIAS", "ATESTADO", "AFASTADO", "INATIVO"];
 
 export default function FuncionariosPage() {
-  const { data, empresaAtiva, addEmployee, updateEmployee } = useErpData();
+  const { data, empresaAtiva, addEmployee, updateEmployee, deleteEmployee } = useErpData();
   const [sheetEmployees, setSheetEmployees] = useState<Employee[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState("Carregando funcionários do Google Sheets...");
@@ -104,23 +104,44 @@ export default function FuncionariosPage() {
   const teamCount = new Set(employees.map((employee) => employee.equipe || "SEM EQUIPE")).size;
   const vacationReady = employees.filter((employee) => employee.podeTirarFerias.toUpperCase() === "SIM").length;
 
-  function handleToggleStatus(employee: Employee) {
-    const updatedEmployee: Employee = {
-      ...employee,
-      situacao: employee.situacao === "ATIVO" ? "INATIVO" : "ATIVO",
-    };
+  function handleEmployeeFieldChange(key: EmployeeColumnKey, value: string) {
+    setEmployeeForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleDeleteEmployee(employee: Employee) {
+    const confirmed = window.confirm(`Excluir ${employee.funcionario} da lista?`);
+
+    if (!confirmed) {
+      return;
+    }
 
     if (sheetEmployees) {
-      setSheetEmployees((current) =>
-        current?.map((item) => (item.id === employee.id ? updatedEmployee : item)) ?? current,
-      );
+      setSheetEmployees((current) => current?.filter((item) => item.id !== employee.id) ?? current);
     } else {
-      updateEmployee(updatedEmployee);
+      deleteEmployee(employee.id);
+    }
+
+    if (viewEmployee?.id === employee.id) {
+      setViewEmployee(null);
+    }
+
+    if (editingEmployee?.id === employee.id) {
+      setEditingEmployee(null);
     }
   }
 
-  function handleEmployeeFieldChange(key: EmployeeColumnKey, value: string) {
-    setEmployeeForm((current) => ({ ...current, [key]: value }));
+  function handleToggleEmployeeStatus(employee: Employee) {
+    const nextStatus: EmployeeStatus = employee.situacao === "ATIVO" ? "INATIVO" : "ATIVO";
+    const updatedEmployee: Employee = {
+      ...employee,
+      situacao: nextStatus,
+    };
+
+    if (sheetEmployees) {
+      setSheetEmployees((current) => current?.map((item) => (item.id === employee.id ? updatedEmployee : item)) ?? current);
+    } else {
+      updateEmployee(updatedEmployee);
+    }
   }
 
   function handleImportEmployees(rows: SpreadsheetRow[]) {
@@ -400,12 +421,24 @@ export default function FuncionariosPage() {
                           <ActionButton label="Ver" onClick={() => setViewEmployee(employee)} tone="view" />
                           <ActionButton label="Editar" onClick={() => setEditingEmployee(employee)} tone="edit" />
                           <button
-                            className="grid size-9 place-items-center rounded-lg bg-red-500/10 text-red-300 transition hover:bg-red-500/20"
-                            onClick={() => handleToggleStatus(employee)}
+                            className={`grid size-9 place-items-center rounded-lg border transition ${
+                              employee.situacao === "ATIVO"
+                                ? "border-emerald-500/15 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/30 hover:bg-emerald-500/20"
+                                : "border-slate-500/15 bg-slate-500/10 text-slate-200 hover:border-slate-500/30 hover:bg-slate-500/20"
+                            }`}
+                            onClick={() => handleToggleEmployeeStatus(employee)}
                             title={employee.situacao === "ATIVO" ? "Marcar como inativo" : "Marcar como ativo"}
                             type="button"
                           >
-                            ðŸ—‘
+                            <PowerIcon />
+                          </button>
+                          <button
+                            className="grid size-9 place-items-center rounded-lg border border-red-500/15 bg-red-500/10 text-red-300 transition hover:border-red-500/30 hover:bg-red-500/20"
+                            onClick={() => handleDeleteEmployee(employee)}
+                            title="Excluir funcionário"
+                            type="button"
+                          >
+                            <DeleteIcon />
                           </button>
                         </div>
                       </td>
@@ -524,10 +557,13 @@ function StatusBadge({ status }: { status: EmployeeStatus }) {
 }
 
 function ActionButton({ label, onClick, tone }: { label: string; onClick: () => void; tone: "view" | "edit" }) {
-  const styles = tone === "view" ? "bg-slate-500/10 text-slate-300" : "bg-yellow-500/10 text-yellow-300";
+  const styles =
+    tone === "view"
+      ? "border border-slate-500/15 bg-slate-500/10 text-slate-200 hover:border-slate-500/30 hover:bg-slate-500/20"
+      : "border border-yellow-500/15 bg-yellow-500/10 text-yellow-300 hover:border-yellow-500/30 hover:bg-yellow-500/20";
 
   return (
-    <button className={`grid size-9 place-items-center rounded-lg transition hover:bg-white/10 ${styles}`} onClick={onClick} title={label} type="button">
+    <button className={`grid size-9 place-items-center rounded-lg transition ${styles}`} onClick={onClick} title={label} type="button">
       <ActionIcon tone={tone} />
     </button>
   );
@@ -560,6 +596,27 @@ function ActionIcon({ tone }: { tone: "view" | "edit" }) {
   return (
     <svg aria-hidden="true" className="size-4" fill="none" stroke={stroke} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
       {path}
+    </svg>
+  );
+}
+
+function DeleteIcon() {
+  return (
+    <svg aria-hidden="true" className="size-4" fill="none" stroke="#fca5a5" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M6 6l1 14h10l1-14" />
+      <path d="M10 11v5" />
+      <path d="M14 11v5" />
+    </svg>
+  );
+}
+
+function PowerIcon() {
+  return (
+    <svg aria-hidden="true" className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+      <path d="M12 3v9" />
+      <path d="M7.5 6.5a7 7 0 1 0 9 0" />
     </svg>
   );
 }

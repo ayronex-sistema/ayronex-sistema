@@ -163,6 +163,13 @@ export function useErpData() {
     }));
   }, []);
 
+  const deleteEmployee = useCallback((employeeId: string) => {
+    setData((current) => ({
+      ...current,
+      employees: current.employees.filter((item) => item.id !== employeeId),
+    }));
+  }, []);
+
   return useMemo(
     () => ({
       data,
@@ -185,6 +192,7 @@ export function useErpData() {
       addWhatsAppMessage,
       addEmployee,
       updateEmployee,
+      deleteEmployee,
     }),
     [
       addConectaCode,
@@ -199,6 +207,7 @@ export function useErpData() {
       updateMaterial,
       deleteMaterial,
       addWhatsAppMessage,
+      deleteEmployee,
       data,
       empresaAtiva,
       setEmpresaAtiva,

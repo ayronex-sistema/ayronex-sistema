@@ -37,6 +37,29 @@ export default function PreviaFinanceiraPage() {
   const comparativo = useMemo(() => buildCompanyPreviewRows(data), [data]);
   const monthlyComparison = useMemo(() => buildMonthlyComparison(dataByCompany), [dataByCompany]);
 
+  const handleExportCsv = () => {
+    const rows = [
+      ["Empresa", "Faturamento", "Custo", "Lucro", "Status"],
+      ...comparativo.map((row) => [
+        row.name,
+        formatCurrencyForCsv(row.faturamento),
+        formatCurrencyForCsv(row.custos),
+        formatCurrencyForCsv(row.lucro),
+        row.lucro > 0 ? "Positivo" : row.lucro < 0 ? "Negativo" : "Neutro",
+      ]),
+    ];
+
+    const csvContent = "\uFEFF" + rows.map((row) => row.map(escapeCsvCell).join(";")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `previa-financeira-${monthKey(new Date())}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <ErpShell active="previafinanceira">
       <section className="space-y-6 font-sans">
@@ -54,6 +77,16 @@ export default function PreviaFinanceiraPage() {
             <p className="mt-1 text-lg font-bold text-yellow-300">{empresaAtiva}</p>
           </div>
         </header>
+
+        <div className="flex justify-end">
+          <button
+            className="inline-flex items-center justify-center rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/10 px-4 py-2 text-sm font-bold text-[#E8C75A] transition hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/15 hover:text-[#F4DA87]"
+            onClick={handleExportCsv}
+            type="button"
+          >
+            Exportar planilha
+          </button>
+        </div>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <SummaryCard
@@ -421,6 +454,23 @@ function buildCompanyPreviewRows(data: ErpData): CompanyPreviewRow[] {
       lucro,
     };
   });
+}
+
+function formatCurrencyForCsv(value: number) {
+  return `R$ ${roundMoney(value).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function escapeCsvCell(value: string) {
+  const safeValue = String(value ?? "");
+
+  if (/[;"\n\r]/.test(safeValue)) {
+    return `"${safeValue.replace(/"/g, '""')}"`;
+  }
+
+  return safeValue;
 }
 
 function buildMonthlyComparison(dataByCompany: ErpData): MonthlyComparison[] {
