@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { useErpData } from "@/hooks/use-erp-data";
@@ -14,12 +15,12 @@ type ErpShellProps = {
     | "dashboard"
     | "modulos"
     | "operacao"
-    | "whatsapp"
-    | "indicadores"
-    | "previafinanceira"
-    | "funcionarios"
-    | "materiais"
-    | "vr"
+  | "whatsapp"
+  | "indicadores"
+  | "previafinanceira"
+  | "funcionarios"
+  | "materiais"
+  | "vr"
     | "financeiro"
     | "configuracoes"
     | "seguranca";
@@ -41,98 +42,179 @@ const navigation = [
   { key: "configuracoes", label: "Configurações", href: "/configuracoes", icon: "settings" },
 ] as const;
 
-const mobileNavigation = navigation.filter((item) => ["dashboard", "operacao", "financeiro", "configuracoes"].includes(item.key));
-
 type NavigationKey = (typeof navigation)[number]["key"];
 
 export function ErpShell({ active, children }: ErpShellProps) {
   const { empresaAtiva, setEmpresaAtiva } = useErpData();
   const badges = useModuleBadges();
   const { theme, setTheme } = useErpTheme();
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
+    const syncMode = () => setIsMobile(mediaQuery.matches);
+
+    syncMode();
+    mediaQuery.addEventListener("change", syncMode);
+
+    return () => mediaQuery.removeEventListener("change", syncMode);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileMenuOpen]);
 
   return (
     <main className="min-h-screen bg-black text-slate-50 transition-colors duration-200 dark:bg-black dark:text-slate-50">
       <div className="pointer-events-none fixed inset-0 bg-black" />
       <div className="relative flex min-h-screen">
-        <aside className="hidden w-64 shrink-0 flex-col border-r border-white/10 bg-black shadow-2xl shadow-black/40 md:flex">
-          <BrandBlock />
+        {!isMobile ? (
+          <aside className="w-64 shrink-0 border-r border-white/10 bg-black shadow-2xl shadow-black/40 flex flex-col">
+            <BrandBlock />
 
-          <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
-            <CompanySelector empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
+            <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
+              <CompanySelector empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
 
-            {navigation.map((item) => (
-              <NavLink active={active === item.key} badge={badges[item.key as NavigationKey]} href={item.href} icon={item.icon} key={item.key} label={item.label} />
-            ))}
+              {navigation.map((item) => (
+                <NavLink active={active === item.key} badge={badges[item.key as NavigationKey]} href={item.href} icon={item.icon} key={item.key} label={item.label} />
+              ))}
 
-            <div className="mt-2 border-t border-white/10 pt-3">
-              <ThemeToggleButton themeMode={theme.mode} onToggle={() => setTheme({ ...theme, mode: theme.mode === "dark" ? "light" : "dark" })} />
+              <div className="mt-2 border-t border-white/10 pt-3">
+                <ThemeToggleButton themeMode={theme.mode} onToggle={() => setTheme({ ...theme, mode: theme.mode === "dark" ? "light" : "dark" })} />
+              </div>
+            </nav>
+
+            <form action="/api/auth/logout" method="post" className="px-3 pb-4">
+              <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-100" type="submit">
+                <MenuIcon name="logout" />
+                Sair
+              </button>
+            </form>
+          </aside>
+        ) : null}
+
+        <section className="min-w-0 flex-1">
+          <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b border-white/10 bg-black/90 px-4 py-3 backdrop-blur-xl lg:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                className="inline-flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-white transition hover:bg-white/[0.06] lg:hidden"
+                aria-label="Abrir menu"
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <MenuIcon name="menu" />
+              </button>
+              <BrandLogo compact />
             </div>
+
+            <div className="ml-auto flex items-center gap-2 md:hidden">
+              <ThemeToggleButton
+                themeMode={theme.mode}
+                onToggle={() => setTheme({ ...theme, mode: theme.mode === "dark" ? "light" : "dark" })}
+              />
+            </div>
+
+            <div className="hidden text-right md:block">
+              <p className="text-sm font-bold">Administrador</p>
+              <p className="mt-1 text-xs text-slate-400">admin@ayronex.com</p>
+            </div>
+            <div className="hidden lg:block">
+              <CompanySelector compact empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
+            </div>
+            <div className="hidden md:block">
+              <ThemeToggleButton themeMode={theme.mode} onToggle={() => setTheme({ ...theme, mode: theme.mode === "dark" ? "light" : "dark" })} compact />
+            </div>
+          </header>
+
+          <div className="px-3 py-4 sm:px-4 sm:py-6 lg:px-6">{children}</div>
+        </section>
+      </div>
+
+      {isMobile ? (
+        <div
+          className={`fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity ${
+            mobileMenuOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+          }`}
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      ) : null}
+
+      {isMobile ? (
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 w-[86vw] max-w-sm border-r border-white/10 bg-black shadow-2xl shadow-black/40 transition-transform duration-300 ${
+            mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+          aria-hidden={!mobileMenuOpen}
+        >
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+            <BrandLogo compact />
+            <button
+              className="inline-flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-white transition hover:bg-white/[0.06]"
+              aria-label="Fechar menu"
+              type="button"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <MenuIcon name="close" />
+            </button>
+          </div>
+
+          <div className="border-b border-white/10 px-4 py-4">
+            <CompanySelector empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
+          </div>
+
+          <div className="border-b border-white/10 px-4 py-4">
+            <ThemeToggleButton themeMode={theme.mode} onToggle={() => setTheme({ ...theme, mode: theme.mode === "dark" ? "light" : "dark" })} />
+          </div>
+
+          <nav className="flex-1 overflow-y-auto px-3 py-4">
+            {navigation.map((item) => (
+              <Link
+                className={`group mb-1 flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                  active === item.key
+                    ? "border border-white/10 bg-white/[0.03] text-white"
+                    : "border border-transparent bg-transparent text-white hover:border-white/10 hover:bg-white/[0.03]"
+                }`}
+                href={item.href}
+                key={item.key}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="flex items-center gap-3">
+                  <MenuIcon name={item.icon} />
+                  {item.label}
+                </span>
+                <span className="flex items-center gap-2 text-slate-500 group-hover:text-white">
+                  {badges[item.key as NavigationKey] ? (
+                    <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-yellow-500 px-2 py-0.5 text-[10px] font-black text-black">
+                      {badges[item.key as NavigationKey]}
+                    </span>
+                  ) : null}
+                  <span>›</span>
+                </span>
+              </Link>
+            ))}
           </nav>
 
-          <form action="/api/auth/logout" method="post" className="px-3 pb-4">
+          <form action="/api/auth/logout" method="post" className="border-t border-white/10 px-3 pb-4 pt-4">
             <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-slate-100" type="submit">
               <MenuIcon name="logout" />
               Sair
             </button>
           </form>
-        </aside>
-
-        <section className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 border-b border-white/10 bg-black/90 pt-[env(safe-area-inset-top)] backdrop-blur-xl dark:bg-black/90">
-            <div className="flex min-w-0 items-center gap-3 px-4 py-3 lg:px-6">
-              <BrandLogo compact />
-
-              <div className="ml-auto flex items-center gap-2 md:hidden">
-                <ThemeToggleButton
-                  themeMode={theme.mode}
-                  onToggle={() => setTheme({ ...theme, mode: theme.mode === "dark" ? "light" : "dark" })}
-                />
-              </div>
-
-              <div className="hidden items-center gap-4 md:flex">
-                <div className="text-right">
-                  <p className="text-sm font-bold">Administrador</p>
-                  <p className="mt-1 text-xs text-slate-400">admin@ayronex.com</p>
-                </div>
-                <CompanySelector compact empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
-                <ThemeToggleButton themeMode={theme.mode} onToggle={() => setTheme({ ...theme, mode: theme.mode === "dark" ? "light" : "dark" })} compact />
-              </div>
-            </div>
-
-            <div className="border-t border-white/10 px-4 pb-3 md:hidden">
-              <CompanySelector compact empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
-            </div>
-          </header>
-
-          <div className="px-3 py-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-4 sm:py-6 md:pb-6 lg:px-6">{children}</div>
-        </section>
-      </div>
-
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-black/95 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden">
-        <div className="grid grid-cols-4 gap-1">
-          {mobileNavigation.map((item) => (
-            <Link
-              className={`touch-manipulation flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-[10px] font-bold uppercase tracking-[0.14em] transition ${
-                active === item.key
-                  ? "border border-white/10 bg-white/[0.05] text-white"
-                  : "border border-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.04] hover:text-white"
-              }`}
-              href={item.href}
-              key={item.key}
-            >
-              <span className="relative flex items-center justify-center">
-                <MenuIcon name={item.icon} />
-                {badges[item.key as NavigationKey] ? (
-                  <span className="absolute -right-2 -top-2 inline-flex min-w-5 items-center justify-center rounded-full bg-yellow-500 px-1.5 py-0.5 text-[9px] font-black text-black">
-                    {badges[item.key as NavigationKey]}
-                  </span>
-                ) : null}
-              </span>
-              <span className="leading-none">{item.label}</span>
-            </Link>
-          ))}
         </div>
-      </nav>
+        </aside>
+      ) : null}
     </main>
   );
 }
@@ -263,7 +345,10 @@ function ThemeGlyph({ mode }: { mode: "dark" | "light" }) {
           </g>
         </>
       ) : (
-        <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" fill="#f8fafc" />
+        <path
+          d="M21 12.8A8.5 8.5 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"
+          fill="#f8fafc"
+        />
       )}
     </svg>
   );
