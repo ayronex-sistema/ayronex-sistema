@@ -129,7 +129,7 @@ export default function MateriaisPage() {
 
   return (
     <ErpShell active="materiais">
-      <section className="grid gap-6">
+      <section className="erp-materials-page grid gap-6">
         <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-yellow-500">Controle de materiais</p>

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 export type ErpTheme = {
   accent: string;
   fontScale: number;
+  mode: "dark" | "light";
 };
 
 const STORAGE_KEY = "ayronex-theme-v1";
@@ -12,6 +13,7 @@ const STORAGE_KEY = "ayronex-theme-v1";
 export const defaultErpTheme: ErpTheme = {
   accent: "#f5b900",
   fontScale: 1,
+  mode: "dark",
 };
 
 export function useErpTheme() {
@@ -67,6 +69,8 @@ function readStoredTheme(): ErpTheme {
 }
 
 function applyTheme(theme: ErpTheme) {
+  document.documentElement.dataset.theme = theme.mode;
+  document.documentElement.classList.toggle("dark", theme.mode === "dark");
   document.documentElement.style.setProperty("--erp-accent", theme.accent);
   document.documentElement.style.setProperty("--erp-font-scale", String(theme.fontScale));
 }

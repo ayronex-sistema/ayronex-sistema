@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ErpShell } from "@/components/erp-shell";
 import { useErpData } from "@/hooks/use-erp-data";
+import { useErpTheme } from "@/hooks/use-erp-theme";
 import { calcularResumoERP, formatCurrency } from "@/lib/calculator";
 import { companies, filterErpDataByCompany } from "@/lib/companies";
 import { buildChecklistCostItems, sumChecklistCosts, type ChecklistCostItem } from "@/lib/checklist-finance";
@@ -27,6 +28,8 @@ type MonthlyComparison = {
 
 export default function PreviaFinanceiraPage() {
   const { data, dataByCompany, empresaAtiva } = useErpData();
+  const { theme } = useErpTheme();
+  const isLight = theme.mode === "light";
   const [showCostDetails, setShowCostDetails] = useState(false);
 
   const resumoAtivo = useMemo(() => calcularResumoERP(dataByCompany), [dataByCompany]);
@@ -72,9 +75,9 @@ export default function PreviaFinanceiraPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-yellow-950/60 bg-zinc-950 px-4 py-3 text-sm shadow-2xl shadow-black/20">
-            <p className="text-slate-400">Empresa ativa</p>
-            <p className="mt-1 text-lg font-bold text-yellow-300">{empresaAtiva}</p>
+          <div className={`rounded-2xl px-4 py-3 text-sm shadow-2xl shadow-black/20 ${isLight ? "border border-slate-200 bg-white" : "border border-yellow-950/60 bg-zinc-950"}`}>
+            <p className={isLight ? "text-slate-500" : "text-slate-400"}>Empresa ativa</p>
+            <p className={isLight ? "mt-1 text-lg font-bold text-slate-900" : "mt-1 text-lg font-bold text-yellow-300"}>{empresaAtiva}</p>
           </div>
         </header>
 
@@ -92,18 +95,21 @@ export default function PreviaFinanceiraPage() {
           <SummaryCard
             accent="blue"
             helper="valor acumulado com base na produção"
+            isLight={isLight}
             label="Faturamento estimado"
             value={formatCurrency(faturamentoEstimado)}
           />
           <SummaryCard
             accent="amber"
             helper="soma dos itens lançados nos checklists"
+            isLight={isLight}
             label="Custos operacionais"
             value={formatCurrency(custosOperacionais)}
           />
           <SummaryCard
             accent={lucroProjetado > 0 ? "emerald" : lucroProjetado < 0 ? "rose" : "slate"}
             helper="faturamento - custo"
+            isLight={isLight}
             label="Lucro projetado"
             value={formatCurrency(lucroProjetado)}
           />
@@ -265,10 +271,10 @@ export default function PreviaFinanceiraPage() {
               <p className="text-xs font-bold uppercase tracking-[0.24em] text-yellow-500">Leitura rápida</p>
               <h3 className="mt-2 text-lg font-black tracking-tight text-white">Resumo do período</h3>
               <div className="mt-4 space-y-3 text-sm">
-                <StatLine label="Saldo atual" value={formatCurrency(resumoAtivo.saldo)} />
-                <StatLine label="A pagar" value={formatCurrency(resumoAtivo.aPagar)} tone={resumoAtivo.aPagar > 0 ? "warning" : "neutral"} />
-                <StatLine label="Produção do mês" value={`${resumoAtivo.productionMonth.length} registros`} />
-                <StatLine label="Resultado previsto" value={resumoAtivo.resultadoPrevisto.toUpperCase()} tone={resumoAtivo.resultadoPrevisto === "positivo" ? "success" : "danger"} />
+                <StatLine isLight={isLight} label="Saldo atual" value={formatCurrency(resumoAtivo.saldo)} />
+                <StatLine isLight={isLight} label="A pagar" value={formatCurrency(resumoAtivo.aPagar)} tone={resumoAtivo.aPagar > 0 ? "warning" : "neutral"} />
+                <StatLine isLight={isLight} label="Produção do mês" value={`${resumoAtivo.productionMonth.length} registros`} />
+                <StatLine isLight={isLight} label="Resultado previsto" value={resumoAtivo.resultadoPrevisto.toUpperCase()} tone={resumoAtivo.resultadoPrevisto === "positivo" ? "success" : "danger"} />
               </div>
             </div>
 
@@ -287,6 +293,7 @@ export default function PreviaFinanceiraPage() {
           company={empresaAtiva}
           items={costItemsAtivos}
           onClose={() => setShowCostDetails(false)}
+          isLight={isLight}
           total={custosOperacionais}
         />
       ) : null}
@@ -299,11 +306,13 @@ function SummaryCard({
   value,
   helper,
   accent,
+  isLight,
 }: {
   label: string;
   value: string;
   helper: string;
   accent: "blue" | "amber" | "emerald" | "rose" | "slate";
+  isLight: boolean;
 }) {
   const accents = {
     blue: "border-blue-500/20 bg-blue-500/10 text-blue-200",
@@ -314,12 +323,12 @@ function SummaryCard({
   };
 
   return (
-    <article className="rounded-[1.5rem] border border-white/10 bg-black p-5 shadow-2xl shadow-black/25">
+    <article className={`rounded-[1.5rem] p-5 shadow-2xl ${isLight ? "border border-slate-200 bg-white shadow-slate-200/60" : "border border-white/10 bg-black shadow-black/25"}`}>
       <div className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] ${accents[accent]}`}>
         {label}
       </div>
-      <p className="mt-4 text-3xl font-black tracking-tight text-white">{value}</p>
-      <p className="mt-2 text-sm text-slate-400">{helper}</p>
+      <p className={isLight ? "mt-4 text-3xl font-black tracking-tight text-slate-900" : "mt-4 text-3xl font-black tracking-tight text-white"}>{value}</p>
+      <p className={isLight ? "mt-2 text-sm text-slate-600" : "mt-2 text-sm text-slate-400"}>{helper}</p>
     </article>
   );
 }
@@ -328,10 +337,12 @@ function StatLine({
   label,
   value,
   tone = "neutral",
+  isLight,
 }: {
   label: string;
   value: string;
   tone?: "neutral" | "warning" | "success" | "danger";
+  isLight: boolean;
 }) {
   const tones = {
     neutral: "text-slate-200",
@@ -341,8 +352,8 @@ function StatLine({
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-      <span className="text-slate-400">{label}</span>
+    <div className={`flex items-center justify-between gap-4 rounded-2xl px-4 py-3 ${isLight ? "border border-slate-200 bg-slate-50" : "border border-white/10 bg-white/[0.03]"}`}>
+      <span className={isLight ? "text-slate-600" : "text-slate-400"}>{label}</span>
       <strong className={`font-black ${tones[tone]}`}>{value}</strong>
     </div>
   );
@@ -353,15 +364,17 @@ function CostDetailsModal({
   items,
   onClose,
   total,
+  isLight,
 }: {
   company: CompanyName;
   items: ChecklistCostItem[];
   onClose: () => void;
   total: number;
+  isLight: boolean;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6 backdrop-blur-sm" role="dialog" aria-modal="true">
-      <div className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-zinc-950 shadow-2xl shadow-black/60">
+      <div className={`max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-[1.75rem] shadow-2xl ${isLight ? "border border-slate-200 bg-white shadow-slate-200/70" : "border border-white/10 bg-zinc-950 shadow-black/60"}`}>
         <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-yellow-500">Abrir Financeiro</p>

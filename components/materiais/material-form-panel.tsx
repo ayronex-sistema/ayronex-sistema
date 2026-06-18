@@ -16,7 +16,7 @@ const materialStatusOptions: MaterialStatus[] = ["Disponivel", "Baixo estoque", 
 
 export function MaterialFormPanel({ draft, editing, onChange, onClear, onSubmit, onCancelEdit }: MaterialFormPanelProps) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-zinc-950 p-6">
+    <section data-material-form className="rounded-2xl border border-white/10 bg-zinc-950 p-6">
       <div className="border-b border-white/10 pb-4">
         <p className="text-sm font-bold uppercase tracking-[0.2em] text-yellow-500">Cadastro</p>
         <h2 className="mt-2 text-xl font-black text-white">{editing ? "Editar material" : "Novo material"}</h2>

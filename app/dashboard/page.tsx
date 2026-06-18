@@ -5,6 +5,7 @@ import { type ReactNode, useMemo, useState } from "react";
 import { ErpShell } from "@/components/erp-shell";
 import { ModuleSpreadsheetActions } from "@/components/module-spreadsheet-actions";
 import { useErpData } from "@/hooks/use-erp-data";
+import { useErpTheme } from "@/hooks/use-erp-theme";
 import { calcularResumoERP, formatCurrency } from "@/lib/calculator";
 import { companies, filterErpDataByCompany } from "@/lib/companies";
 import type { CompanyName, ErpData, ProductionRecord } from "@/lib/types";
@@ -49,6 +50,8 @@ const defaultDailyProduction = [28, 46, 38, 57, 49, 72];
 
 export default function DashboardPage() {
   const { data, dataByCompany, empresaAtiva } = useErpData();
+  const { theme } = useErpTheme();
+  const isLight = theme.mode === "light";
   const [comparisonMetric, setComparisonMetric] = useState<ComparisonMetric>("lucro");
 
   const resumo = useMemo(() => calcularResumoERP(dataByCompany), [dataByCompany]);
@@ -62,7 +65,7 @@ export default function DashboardPage() {
 
   return (
     <ErpShell active="dashboard">
-      <section className="space-y-6 font-sans">
+      <section className="erp-dashboard-page space-y-6 font-sans">
         <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-yellow-500">Dashboard gerencial</p>
@@ -71,8 +74,8 @@ export default function DashboardPage() {
               Painel de {empresaAtiva}. Alertas, comparação entre empresas e atalhos com pendências em um único lugar.
             </p>
           </div>
-          <div className="rounded-2xl border border-yellow-950/60 bg-zinc-950 px-4 py-3 text-sm shadow-2xl shadow-black/20">
-            <p className="text-slate-400">Resultado previsto</p>
+          <div className={`rounded-2xl px-4 py-3 text-sm shadow-2xl shadow-black/20 ${isLight ? "border border-slate-200 bg-white" : "border border-yellow-950/60 bg-zinc-950"}`}>
+            <p className={isLight ? "text-slate-500" : "text-slate-400"}>Resultado previsto</p>
             <p className={resumo.resultadoPrevisto === "positivo" ? "font-bold text-emerald-300" : "font-bold text-red-300"}>
               {resumo.resultadoPrevisto.toUpperCase()}
             </p>
@@ -80,60 +83,70 @@ export default function DashboardPage() {
         </header>
 
         <Link
-          className="group flex items-center gap-4 rounded-[1.35rem] border border-white/10 bg-black px-4 py-4 transition hover:-translate-y-0.5 hover:border-yellow-500/40 hover:bg-yellow-500/5"
+          className={`group flex items-center gap-4 rounded-[1.35rem] px-4 py-4 transition hover:-translate-y-0.5 ${
+            isLight
+              ? "border border-slate-200 bg-white hover:border-yellow-400/60 hover:bg-amber-50"
+              : "border border-white/10 bg-black hover:border-yellow-500/40 hover:bg-yellow-500/5"
+          }`}
           href="/previa-financeira"
         >
-          <div className="grid size-14 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.03] text-yellow-300">
+          <div className={`grid size-14 shrink-0 place-items-center rounded-2xl border ${isLight ? "border-amber-200 bg-amber-50 text-amber-600" : "border-white/10 bg-white/[0.03] text-yellow-300"}`}>
             <QuickIcon name="calculator" />
           </div>
           <div className="min-w-0">
-            <p className="text-lg font-black tracking-tight text-white group-hover:text-yellow-200">PRÉVIA FINANCEIRA</p>
-            <p className="mt-1 max-w-3xl text-sm text-slate-400">
+            <p className={isLight ? "text-lg font-black tracking-tight text-slate-900 group-hover:text-amber-700" : "text-lg font-black tracking-tight text-white group-hover:text-yellow-200"}>PRÉVIA FINANCEIRA</p>
+            <p className={isLight ? "mt-1 max-w-3xl text-sm text-slate-600" : "mt-1 max-w-3xl text-sm text-slate-400"}>
               Faturamento estimado, custos operacionais e lucro projetado em tempo real.
             </p>
           </div>
-          <span className="ml-auto text-xl text-slate-500 transition group-hover:text-white">›</span>
+          <span className={isLight ? "ml-auto text-xl text-slate-400 transition group-hover:text-slate-700" : "ml-auto text-xl text-slate-500 transition group-hover:text-white"}>›</span>
         </Link>
 
-        <AlertCenter alerts={alerts} />
+        <AlertCenter alerts={alerts} isLight={isLight} />
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricButton active={comparisonMetric === "faturamento"} helper="Clique para ordenar a tabela" icon="revenue" label="Faturamento estimado" onClick={() => setComparisonMetric("faturamento")} tone="blue" value={formatCurrency(resumo.faturamentoEstimado)} />
-          <MetricButton active={comparisonMetric === "despesas"} helper="Clique para ordenar a tabela" icon="cost" label="Custo total" onClick={() => setComparisonMetric("despesas")} tone="green" value={formatCurrency(resumo.despesas)} />
-          <MetricButton active={comparisonMetric === "lucro"} helper="Clique para ordenar a tabela" icon="profit" label="Lucro projetado" onClick={() => setComparisonMetric("lucro")} tone="purple" value={formatCurrency(resumo.saldoFinalPrevisto)} />
-          <MetricButton active={comparisonMetric === "producao"} helper="Clique para ordenar a tabela" icon="production" label="Produção do mês" onClick={() => setComparisonMetric("producao")} tone="orange" value={`${sumPoints(resumo.productionMonth)} pontos`} />
+          <MetricButton active={comparisonMetric === "faturamento"} helper="Clique para ordenar a tabela" icon="revenue" isLight={isLight} label="Faturamento estimado" onClick={() => setComparisonMetric("faturamento")} tone="blue" value={formatCurrency(resumo.faturamentoEstimado)} />
+          <MetricButton active={comparisonMetric === "despesas"} helper="Clique para ordenar a tabela" icon="cost" isLight={isLight} label="Custo total" onClick={() => setComparisonMetric("despesas")} tone="green" value={formatCurrency(resumo.despesas)} />
+          <MetricButton active={comparisonMetric === "lucro"} helper="Clique para ordenar a tabela" icon="profit" isLight={isLight} label="Lucro projetado" onClick={() => setComparisonMetric("lucro")} tone="purple" value={formatCurrency(resumo.saldoFinalPrevisto)} />
+          <MetricButton active={comparisonMetric === "producao"} helper="Clique para ordenar a tabela" icon="production" isLight={isLight} label="Produção do mês" onClick={() => setComparisonMetric("producao")} tone="orange" value={`${sumPoints(resumo.productionMonth)} pontos`} />
         </section>
 
-        <section className="rounded-[1.75rem] border border-white/10 bg-black p-4 shadow-2xl shadow-black/40 md:p-6">
+        <section className={`rounded-[1.75rem] p-4 shadow-2xl md:p-6 ${isLight ? "border border-slate-200 bg-white shadow-slate-200/60" : "border border-white/10 bg-black shadow-black/40"}`}>
           <div className="grid gap-4 xl:grid-cols-2">
-            <Panel title="Produção por dia" note={`Meta: ${formatPoints(average(dailyProduction) * 1.15)} pontos | Média: ${formatPoints(average(dailyProduction))} pontos`}>
-              <LineChart values={dailyProduction} />
+            <Panel isLight={isLight} title="Produção por dia" note={`Meta: ${formatPoints(average(dailyProduction) * 1.15)} pontos | Média: ${formatPoints(average(dailyProduction))} pontos`}>
+              <LineChart isLight={isLight} values={dailyProduction} />
             </Panel>
-            <Panel title="Produção por tipo" note={`Meta: ${formatPoints(average(productionByType.map((item) => item.value)) * 1.2)} itens | Média: ${formatPoints(average(productionByType.map((item) => item.value)))}`}>
-              <DonutChart emptyLabel="Sem produção" items={productionByType} />
+            <Panel isLight={isLight} title="Produção por tipo" note={`Meta: ${formatPoints(average(productionByType.map((item) => item.value)) * 1.2)} itens | Média: ${formatPoints(average(productionByType.map((item) => item.value)))}`}>
+              <DonutChart emptyLabel="Sem produção" isLight={isLight} items={productionByType} />
             </Panel>
-            <Panel title="Produção por equipe" note={`Meta: ${formatPoints(average(teamEntries(resumo.productionByTeam).map((entry) => entry[1].count)) * 1.1)} registros`}>
-              <BarChart entries={teamEntries(resumo.productionByTeam)} />
+            <Panel isLight={isLight} title="Produção por equipe" note={`Meta: ${formatPoints(average(teamEntries(resumo.productionByTeam).map((entry) => entry[1].count)) * 1.1)} registros`}>
+              <BarChart isLight={isLight} entries={teamEntries(resumo.productionByTeam)} />
             </Panel>
-            <Panel title="Status de lançamentos" note={`Média: ${formatPoints(average(statusData.map((item) => item.value)))} lançamentos por status`}>
-              <DonutChart emptyLabel="Sem lançamentos" items={statusData} />
+            <Panel isLight={isLight} title="Status de lançamentos" note={`Média: ${formatPoints(average(statusData.map((item) => item.value)))} lançamentos por status`}>
+              <DonutChart emptyLabel="Sem lançamentos" isLight={isLight} items={statusData} />
             </Panel>
           </div>
         </section>
 
-        <section className="rounded-[1.75rem] border border-white/10 bg-[#050505] p-4 shadow-2xl shadow-black/30 md:p-6">
+        <section className={`rounded-[1.75rem] p-4 shadow-2xl md:p-6 ${isLight ? "border border-slate-200 bg-white shadow-slate-200/60" : "border border-white/10 bg-[#050505] shadow-black/30"}`}>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.24em] text-yellow-500">Tabela comparativa</p>
-              <h2 className="mt-2 text-xl font-black tracking-tight text-white">Empresas ordenadas por {comparisonMetrics.find((item) => item.metric === comparisonMetric)?.label.toLowerCase()}</h2>
-              <p className="mt-2 text-sm text-slate-400">Toque nos cards de resumo para reorganizar o comparativo.</p>
+              <h2 className={isLight ? "mt-2 text-xl font-black tracking-tight text-slate-900" : "mt-2 text-xl font-black tracking-tight text-white"}>Empresas ordenadas por {comparisonMetrics.find((item) => item.metric === comparisonMetric)?.label.toLowerCase()}</h2>
+              <p className={isLight ? "mt-2 text-sm text-slate-600" : "mt-2 text-sm text-slate-400"}>Toque nos cards de resumo para reorganizar o comparativo.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               {comparisonMetrics.map((item) => {
                 const selected = comparisonMetric === item.metric;
                 return (
                   <button
-                    className={`rounded-full border px-3 py-2 text-xs font-bold transition ${selected ? "border-yellow-500 bg-yellow-500 text-black" : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-yellow-500/40 hover:text-yellow-200"}`}
+                    className={`rounded-full border px-3 py-2 text-xs font-bold transition ${
+                      selected
+                        ? "border-yellow-500 bg-yellow-500 text-black"
+                        : isLight
+                          ? "border-slate-200 bg-white text-slate-700 hover:border-yellow-400/50 hover:text-amber-700"
+                          : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-yellow-500/40 hover:text-yellow-200"
+                    }`}
                     key={item.metric}
                     onClick={() => setComparisonMetric(item.metric)}
                     type="button"
@@ -203,7 +216,7 @@ export default function DashboardPage() {
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {quickItems.map((item) => (
-            <AccessCard key={item.title} {...item} />
+              <AccessCard isLight={isLight} key={item.title} {...item} />
           ))}
         </section>
       </section>
@@ -213,20 +226,20 @@ export default function DashboardPage() {
 
 type MetricIconName = "revenue" | "cost" | "profit" | "production";
 
-function AlertCenter({ alerts }: { alerts: AlertItem[] }) {
+function AlertCenter({ alerts, isLight }: { alerts: AlertItem[]; isLight: boolean }) {
   const total = alerts.reduce((sum, item) => sum + item.count, 0);
 
   return (
-    <section className="rounded-[1.75rem] border border-red-500/15 bg-[#050505] p-4 shadow-2xl shadow-black/30 md:p-6">
+    <section className={`rounded-[1.75rem] p-4 shadow-2xl md:p-6 ${isLight ? "border border-red-200 bg-white shadow-slate-200/60" : "border border-red-500/15 bg-[#050505] shadow-black/30"}`}>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-red-400">Central de alertas</p>
-          <h2 className="mt-2 text-xl font-black tracking-tight text-white">Pendências críticas de todos os módulos</h2>
-          <p className="mt-2 text-sm text-slate-400">Problemas consolidados para agir rapidamente.</p>
+          <h2 className={isLight ? "mt-2 text-xl font-black tracking-tight text-slate-900" : "mt-2 text-xl font-black tracking-tight text-white"}>Pendências críticas de todos os módulos</h2>
+          <p className={isLight ? "mt-2 text-sm text-slate-600" : "mt-2 text-sm text-slate-400"}>Problemas consolidados para agir rapidamente.</p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm">
-          <p className="text-slate-400">Total crítico</p>
-          <strong className="block text-2xl font-black text-white">{total}</strong>
+        <div className={isLight ? "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" : "rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm"}>
+          <p className={isLight ? "text-slate-500" : "text-slate-400"}>Total crítico</p>
+          <strong className={isLight ? "block text-2xl font-black text-slate-900" : "block text-2xl font-black text-white"}>{total}</strong>
         </div>
       </div>
       <div className="mt-5 grid gap-3 md:grid-cols-3">
@@ -238,10 +251,10 @@ function AlertCenter({ alerts }: { alerts: AlertItem[] }) {
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-bold text-white">{alert.title}</p>
-                <p className="mt-1 text-xs text-slate-400">{alert.detail}</p>
+                <p className={isLight ? "text-sm font-bold text-slate-900" : "text-sm font-bold text-white"}>{alert.title}</p>
+                <p className={isLight ? "mt-1 text-xs text-slate-600" : "mt-1 text-xs text-slate-400"}>{alert.detail}</p>
               </div>
-              <span className="rounded-full bg-black/30 px-3 py-1 text-xs font-black text-white">{alert.count}</span>
+              <span className={isLight ? "rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700" : "rounded-full bg-black/30 px-3 py-1 text-xs font-black text-white"}>{alert.count}</span>
             </div>
           </Link>
         ))}
@@ -257,6 +270,7 @@ function MetricButton({
   value,
   tone,
   active,
+  isLight,
   onClick,
 }: {
   helper: string;
@@ -265,6 +279,7 @@ function MetricButton({
   value: string;
   tone: "blue" | "green" | "purple" | "orange";
   active: boolean;
+  isLight: boolean;
   onClick: () => void;
 }) {
   const tones = {
@@ -276,28 +291,36 @@ function MetricButton({
 
   return (
     <button
-      className={`flex items-start gap-4 rounded-2xl border p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:-translate-y-0.5 ${active ? "border-yellow-500/70 bg-yellow-500/10" : "border-white/10 bg-[#050505]"}`}
+      className={`flex items-start gap-4 rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${
+        active
+          ? isLight
+            ? "border-yellow-500/50 bg-amber-50 shadow-[0_10px_30px_rgba(245,185,0,0.12)]"
+            : "border-yellow-500/70 bg-yellow-500/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+          : isLight
+            ? "border-slate-200 bg-white shadow-[0_10px_25px_rgba(15,23,42,0.06)]"
+            : "border-white/10 bg-[#050505] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+      }`}
       onClick={onClick}
       type="button"
     >
-      <div className={`grid size-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${tones[tone]}`}>
+      <div className={`grid size-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${tones[tone]} ${isLight ? "ring-1 ring-slate-200" : ""}`}>
         <MetricIcon name={icon} />
       </div>
       <div>
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-500">{label}</p>
-        <strong className="mt-2 block text-xl tracking-tight text-white md:text-[1.7rem]">{value}</strong>
-        <p className="mt-2 text-xs text-emerald-300">{helper}</p>
+        <p className={isLight ? "text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-600" : "text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-500"}>{label}</p>
+        <strong className={isLight ? "mt-2 block text-xl tracking-tight text-slate-900 md:text-[1.7rem]" : "mt-2 block text-xl tracking-tight text-white md:text-[1.7rem]"}>{value}</strong>
+        <p className={isLight ? "mt-2 text-xs text-slate-600" : "mt-2 text-xs text-emerald-300"}>{helper}</p>
       </div>
     </button>
   );
 }
 
-function Panel({ title, note, children }: { title: string; note: string; children: ReactNode }) {
+function Panel({ title, note, children, isLight }: { title: string; note: string; children: ReactNode; isLight: boolean }) {
   return (
-    <section className="min-h-72 rounded-2xl border border-white/10 bg-[#050505] p-5">
+    <section className={`min-h-72 rounded-2xl p-5 ${isLight ? "border border-slate-200 bg-white shadow-[0_10px_25px_rgba(15,23,42,0.06)]" : "border border-white/10 bg-[#050505]"}`}>
       <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-extrabold uppercase tracking-[0.12em] text-white">{title}</h2>
-        <p className="text-xs text-slate-500">{note}</p>
+        <h2 className={isLight ? "text-sm font-extrabold uppercase tracking-[0.12em] text-slate-900" : "text-sm font-extrabold uppercase tracking-[0.12em] text-white"}>{title}</h2>
+        <p className={isLight ? "text-xs text-slate-600" : "text-xs text-slate-500"}>{note}</p>
       </div>
       <div className="mt-5">{children}</div>
     </section>
@@ -319,17 +342,17 @@ function MetricIcon({ name }: { name: MetricIconName }) {
   );
 }
 
-function AccessCard({ href, icon, title, description, badge }: QuickItem) {
+function AccessCard({ href, icon, title, description, badge, isLight }: QuickItem & { isLight: boolean }) {
   return (
-    <Link className="group rounded-2xl border border-white/10 bg-[#050505] p-5 transition hover:-translate-y-0.5 hover:border-yellow-500/40 hover:bg-yellow-500/8" href={href}>
+    <Link className={`group rounded-2xl border p-5 transition hover:-translate-y-0.5 ${isLight ? "border-slate-200 bg-white hover:border-yellow-400/50 hover:bg-amber-50" : "border-white/10 bg-[#050505] hover:border-yellow-500/40 hover:bg-yellow-500/8"}`} href={href}>
       <div className="flex items-start justify-between gap-4">
-        <div className="grid size-12 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-yellow-300">
+        <div className={`grid size-12 place-items-center rounded-xl border ${isLight ? "border-amber-200 bg-amber-50 text-amber-600" : "border-white/10 bg-white/[0.03] text-yellow-300"}`}>
           <QuickIcon name={icon} />
         </div>
-        <span className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-xs font-black text-yellow-300">{badge}</span>
+        <span className={isLight ? "rounded-full border border-yellow-200 bg-amber-100 px-3 py-1 text-xs font-black text-amber-700" : "rounded-full border border-yellow-500/20 bg-yellow-500/10 px-3 py-1 text-xs font-black text-yellow-300"}>{badge}</span>
       </div>
-      <p className="mt-4 text-sm font-bold text-white group-hover:text-yellow-200">{title}</p>
-      <p className="mt-2 text-xs text-slate-500">{description}</p>
+      <p className={isLight ? "mt-4 text-sm font-bold text-slate-900 group-hover:text-amber-700" : "mt-4 text-sm font-bold text-white group-hover:text-yellow-200"}>{title}</p>
+      <p className={isLight ? "mt-2 text-xs text-slate-600" : "mt-2 text-xs text-slate-500"}>{description}</p>
     </Link>
   );
 }
@@ -359,7 +382,7 @@ function QuickIcon({ name }: { name: QuickIconName }) {
   );
 }
 
-function LineChart({ values }: { values: number[] }) {
+function LineChart({ values, isLight }: { values: number[]; isLight: boolean }) {
   const averageValue = average(values);
   const metaValue = Math.max(averageValue * 1.15, Math.max(...values, 1) * 0.9);
   const maxValue = Math.max(...values, averageValue, metaValue, 1);
@@ -379,19 +402,31 @@ function LineChart({ values }: { values: number[] }) {
   return (
     <div>
       <div className="mb-4 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-400">
-        <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1">Meta: {formatPoints(metaValue)} pontos</span>
-        <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1">Média: {formatPoints(averageValue)} pontos</span>
+        <span
+          className={`rounded-full border px-3 py-1 ${
+            isLight ? "border-slate-200 bg-slate-100 text-slate-700" : "border-slate-700 bg-slate-900 text-slate-400"
+          }`}
+        >
+          Meta: {formatPoints(metaValue)} pontos
+        </span>
+        <span
+          className={`rounded-full border px-3 py-1 ${
+            isLight ? "border-slate-200 bg-slate-100 text-slate-700" : "border-slate-700 bg-slate-900 text-slate-400"
+          }`}
+        >
+          Média: {formatPoints(averageValue)} pontos
+        </span>
       </div>
       <svg className="h-44 w-full overflow-visible" viewBox={`0 0 ${width} ${height}`}>
-        <line x1={paddingX} x2={width - paddingX} y1={averageY} y2={averageY} stroke="#475569" strokeDasharray="6 6" strokeWidth="1.5" />
-        <line x1={paddingX} x2={width - paddingX} y1={metaY} y2={metaY} stroke="#22c55e" strokeDasharray="4 5" strokeWidth="1.5" />
-        <polyline fill="none" points={points} stroke="#22d3ee" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+        <line x1={paddingX} x2={width - paddingX} y1={averageY} y2={averageY} stroke={isLight ? "#cbd5e1" : "#475569"} strokeDasharray="6 6" strokeWidth="1.5" />
+        <line x1={paddingX} x2={width - paddingX} y1={metaY} y2={metaY} stroke={isLight ? "#f59e0b" : "#22c55e"} strokeDasharray="4 5" strokeWidth="1.5" />
+        <polyline fill="none" points={points} stroke={isLight ? "#2563eb" : "#22d3ee"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
         {points.split(" ").map((point, index) => {
           const [cx, cy] = point.split(",");
           return (
             <g key={point}>
-              <circle className="fill-cyan-200" cx={cx} cy={cy} r="3.5" />
-              <text className="fill-white text-[11px] font-bold" textAnchor="middle" x={cx} y={Number(cy) - 10}>
+              <circle className={isLight ? "fill-blue-300" : "fill-cyan-200"} cx={cx} cy={cy} r="3.5" />
+              <text className={`text-[11px] font-bold ${isLight ? "fill-slate-700" : "fill-white"}`} textAnchor="middle" x={cx} y={Number(cy) - 10}>
                 {formatPoints(values[index])}
               </text>
             </g>
@@ -407,7 +442,7 @@ function LineChart({ values }: { values: number[] }) {
   );
 }
 
-function BarChart({ entries }: { entries: Array<[string, { count: number; points: number; revenue: number }]> }) {
+function BarChart({ entries, isLight }: { entries: Array<[string, { count: number; points: number; revenue: number }]>; isLight: boolean }) {
   const data = entries.length > 0 ? entries : [["Sem equipe", { count: 1, points: 1, revenue: 0 }] as const];
   const counts = data.map(([, value]) => value.count);
   const averageCount = average(counts);
@@ -421,21 +456,33 @@ function BarChart({ entries }: { entries: Array<[string, { count: number; points
   return (
     <div>
       <div className="mb-4 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-400">
-        <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1">Meta: {formatPoints(metaCount)} equipes</span>
-        <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1">Média: {formatPoints(averageCount)} equipes</span>
+        <span
+          className={`rounded-full border px-3 py-1 ${
+            isLight ? "border-slate-200 bg-slate-100 text-slate-700" : "border-slate-700 bg-slate-900 text-slate-400"
+          }`}
+        >
+          Meta: {formatPoints(metaCount)} equipes
+        </span>
+        <span
+          className={`rounded-full border px-3 py-1 ${
+            isLight ? "border-slate-200 bg-slate-100 text-slate-700" : "border-slate-700 bg-slate-900 text-slate-400"
+          }`}
+        >
+          Média: {formatPoints(averageCount)} equipes
+        </span>
       </div>
-      <div className="relative h-56 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+      <div className={`relative h-56 overflow-hidden rounded-2xl border p-3 ${isLight ? "border-slate-200 bg-slate-50/90" : "border-white/10 bg-white/[0.02]"}`}>
         <svg className="absolute inset-3 h-[calc(100%-1.5rem)] w-[calc(100%-1.5rem)]" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none">
-          <line x1="0" x2={chartWidth} y1={averageY} y2={averageY} stroke="#475569" strokeDasharray="6 6" strokeWidth="1.3" />
-          <line x1="0" x2={chartWidth} y1={metaY} y2={metaY} stroke="#22c55e" strokeDasharray="4 5" strokeWidth="1.3" />
+          <line x1="0" x2={chartWidth} y1={averageY} y2={averageY} stroke={isLight ? "#cbd5e1" : "#475569"} strokeDasharray="6 6" strokeWidth="1.3" />
+          <line x1="0" x2={chartWidth} y1={metaY} y2={metaY} stroke={isLight ? "#f59e0b" : "#22c55e"} strokeDasharray="4 5" strokeWidth="1.3" />
         </svg>
         <div className="relative flex h-full items-end gap-3">
           {data.slice(0, 6).map(([team, value]) => (
             <div className="flex flex-1 flex-col items-center gap-2" key={team}>
-              <div className="flex h-40 w-full items-end rounded-t-xl bg-white/[0.03]">
+              <div className={`flex h-40 w-full items-end rounded-t-xl ${isLight ? "bg-slate-100" : "bg-white/[0.03]"}`}>
                 <div className="w-full rounded-t-xl bg-gradient-to-t from-blue-800 to-cyan-400" style={{ height: `${Math.max((value.count / maxCount) * 100, 14)}%` }} />
               </div>
-              <span className="max-w-20 truncate text-xs text-slate-500">{team}</span>
+              <span className={`max-w-20 truncate text-xs ${isLight ? "text-slate-600" : "text-slate-500"}`}>{team}</span>
             </div>
           ))}
         </div>
@@ -444,7 +491,7 @@ function BarChart({ entries }: { entries: Array<[string, { count: number; points
   );
 }
 
-function DonutChart({ items, emptyLabel }: { items: ChartItem[]; emptyLabel: string }) {
+function DonutChart({ items, emptyLabel, isLight }: { items: ChartItem[]; emptyLabel: string; isLight: boolean }) {
   const total = items.reduce((sum, item) => sum + item.value, 0);
   const conic = total
     ? items.reduce(
@@ -464,7 +511,11 @@ function DonutChart({ items, emptyLabel }: { items: ChartItem[]; emptyLabel: str
   return (
     <div className="grid gap-5 md:grid-cols-[180px_1fr] md:items-center">
       <div className="mx-auto grid size-40 place-items-center rounded-full" style={{ background: `conic-gradient(${conic})` }}>
-        <div className="grid size-24 place-items-center rounded-full bg-[#0b171a] text-center text-xs font-bold text-slate-400">
+        <div
+          className={`grid size-24 place-items-center rounded-full text-center text-xs font-bold ${
+            isLight ? "border border-slate-200 bg-white text-slate-700" : "bg-[#0b171a] text-slate-400"
+          }`}
+        >
           {total || emptyLabel}
         </div>
       </div>
@@ -474,16 +525,16 @@ function DonutChart({ items, emptyLabel }: { items: ChartItem[]; emptyLabel: str
         ) : (
           items.map((item) => (
             <div className="flex items-center justify-between gap-3 text-sm" key={item.label}>
-              <span className="flex items-center gap-2 text-slate-300">
+              <span className={`flex items-center gap-2 ${isLight ? "text-slate-700" : "text-slate-300"}`}>
                 <span className="size-3 rounded-full" style={{ backgroundColor: item.color }} />
                 {item.label}
               </span>
-              <strong className="text-white">{item.value}</strong>
+              <strong className={isLight ? "text-slate-900" : "text-white"}>{item.value}</strong>
             </div>
           ))
         )}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-xs text-slate-400">
-          <p className="font-bold text-slate-200">Referência</p>
+        <div className={`rounded-2xl border p-3 text-xs ${isLight ? "border-slate-200 bg-slate-50 text-slate-600" : "border-white/10 bg-white/[0.03] text-slate-400"}`}>
+          <p className={isLight ? "font-bold text-slate-900" : "font-bold text-slate-200"}>Referência</p>
           <p className="mt-1">Meta visual comparada à média atual: {formatPoints(averageValue)} itens.</p>
         </div>
       </div>

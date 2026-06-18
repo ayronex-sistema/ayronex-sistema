@@ -47,7 +47,7 @@ type NavigationKey = (typeof navigation)[number]["key"];
 export function ErpShell({ active, children }: ErpShellProps) {
   const { empresaAtiva, setEmpresaAtiva } = useErpData();
   const badges = useModuleBadges();
-  useErpTheme();
+  const { theme, setTheme } = useErpTheme();
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -76,7 +76,7 @@ export function ErpShell({ active, children }: ErpShellProps) {
   }, [mobileMenuOpen]);
 
   return (
-    <main className="min-h-screen bg-black text-slate-50">
+    <main className="min-h-screen bg-black text-slate-50 transition-colors duration-200 dark:bg-black dark:text-slate-50">
       <div className="pointer-events-none fixed inset-0 bg-black" />
       <div className="relative flex min-h-screen">
         {!isMobile ? (
@@ -89,6 +89,10 @@ export function ErpShell({ active, children }: ErpShellProps) {
               {navigation.map((item) => (
                 <NavLink active={active === item.key} badge={badges[item.key as NavigationKey]} href={item.href} icon={item.icon} key={item.key} label={item.label} />
               ))}
+
+              <div className="mt-2 border-t border-white/10 pt-3">
+                <ThemeToggleButton themeMode={theme.mode} onToggle={() => setTheme({ ...theme, mode: theme.mode === "dark" ? "light" : "dark" })} />
+              </div>
             </nav>
 
             <form action="/api/auth/logout" method="post" className="px-3 pb-4">
@@ -120,6 +124,9 @@ export function ErpShell({ active, children }: ErpShellProps) {
             </div>
             <div className="hidden lg:block">
               <CompanySelector compact empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
+            </div>
+            <div className="hidden md:block">
+              <ThemeToggleButton themeMode={theme.mode} onToggle={() => setTheme({ ...theme, mode: theme.mode === "dark" ? "light" : "dark" })} compact />
             </div>
           </header>
 
@@ -158,6 +165,10 @@ export function ErpShell({ active, children }: ErpShellProps) {
 
           <div className="border-b border-white/10 px-4 py-4">
             <CompanySelector empresaAtiva={empresaAtiva} onChange={setEmpresaAtiva} />
+          </div>
+
+          <div className="border-b border-white/10 px-4 py-4">
+            <ThemeToggleButton themeMode={theme.mode} onToggle={() => setTheme({ ...theme, mode: theme.mode === "dark" ? "light" : "dark" })} />
           </div>
 
           <nav className="flex-1 overflow-y-auto px-3 py-4">
@@ -277,6 +288,65 @@ function CompanySelector({
   );
 }
 
+function ThemeToggleButton({
+  compact = false,
+  onToggle,
+  themeMode,
+}: {
+  compact?: boolean;
+  onToggle: () => void;
+  themeMode: "dark" | "light";
+}) {
+  const isLight = themeMode === "light";
+
+  return (
+    <button
+      data-theme-toggle
+      aria-label={isLight ? "Ativar modo escuro" : "Ativar modo claro"}
+      title={isLight ? "Ativar modo escuro" : "Ativar modo claro"}
+      className={`inline-flex size-11 items-center justify-center rounded-full border transition ${
+        isLight
+          ? "border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
+          : "border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.06]"
+      } ${compact ? "md:size-12" : ""}`}
+      style={isLight ? { borderColor: "rgba(15, 23, 42, 0.12)" } : undefined}
+      type="button"
+      onClick={onToggle}
+    >
+      <ThemeGlyph mode={themeMode} />
+    </button>
+  );
+}
+
+function ThemeGlyph({ mode }: { mode: "dark" | "light" }) {
+  const isLight = mode === "light";
+
+  return (
+    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24">
+      {isLight ? (
+        <>
+          <circle cx="12" cy="12" r="4.5" fill="#0f172a" />
+          <g stroke="#0f172a" strokeLinecap="round" strokeWidth="2">
+            <path d="M12 2.75v2.5" />
+            <path d="M12 18.75v2.5" />
+            <path d="M2.75 12h2.5" />
+            <path d="M18.75 12h2.5" />
+            <path d="m5.45 5.45 1.77 1.77" />
+            <path d="m16.78 16.78 1.77 1.77" />
+            <path d="m18.55 5.45-1.77 1.77" />
+            <path d="m7.22 16.78-1.77 1.77" />
+          </g>
+        </>
+      ) : (
+        <path
+          d="M21 12.8A8.5 8.5 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"
+          fill="#f8fafc"
+        />
+      )}
+    </svg>
+  );
+}
+
 function MenuIcon({ name }: { name: string }) {
   const paths: Record<string, ReactNode> = {
     home: <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
@@ -315,6 +385,13 @@ function MenuIcon({ name }: { name: string }) {
     wallet: <path d="M3 7h18v13H3zM16 12h3M5 7V5a2 2 0 0 1 2-2h10v4" />,
     lock: <path d="M7 11V7a5 5 0 0 1 10 0v4M5 11h14v10H5z" />,
     settings: <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm0-13v3m0 13v3m9.5-9.5h-3m-13 0h-3m16.02-6.52-2.12 2.12M7.6 16.4l-2.12 2.12m13.04 0-2.12-2.12M7.6 7.6 5.48 5.48" />,
+    sun: (
+      <>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.07-7.07-1.41 1.41M8.34 15.66l-1.41 1.41m0-11.31-1.41-1.41m10.48 10.48 1.41 1.41" />
+      </>
+    ),
+    moon: <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" />,
     logout: <path d="M10 17l5-5-5-5m5 5H3m7 9h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-8" />,
   };
 

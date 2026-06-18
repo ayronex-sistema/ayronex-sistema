@@ -12,7 +12,7 @@ type MaterialsTableProps = {
 
 export function MaterialsTable({ materials, onDelete, onEdit, onView }: MaterialsTableProps) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-black p-6">
+    <section data-materials-table className="rounded-2xl border border-white/10 bg-black p-6">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold">Materiais cadastrados</h2>

@@ -5,6 +5,7 @@ import { ErpShell } from "@/components/erp-shell";
 import { EmployeeTabbedForm } from "@/components/employee-tabbed-form";
 import { ModuleSpreadsheetActions, type SpreadsheetRow } from "@/components/module-spreadsheet-actions";
 import { createId, useErpData } from "@/hooks/use-erp-data";
+import { useErpTheme } from "@/hooks/use-erp-theme";
 import { formatDateBr } from "@/lib/date";
 import { EMPLOYEE_SHEET_NAME, employeeColumns, normalizeEmployee, type EmployeeColumnKey } from "@/lib/employees";
 import type { Employee, EmployeeStatus } from "@/lib/types";
@@ -22,6 +23,8 @@ const employeeStatusOptions: EmployeeStatus[] = ["ATIVO", "FERIAS", "ATESTADO", 
 
 export default function FuncionariosPage() {
   const { data, empresaAtiva, addEmployee, updateEmployee, deleteEmployee } = useErpData();
+  const { theme } = useErpTheme();
+  const isLight = theme.mode === "light";
   const [sheetEmployees, setSheetEmployees] = useState<Employee[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState("Carregando funcionários do Google Sheets...");
@@ -402,7 +405,7 @@ export default function FuncionariosPage() {
                     <tr className="transition hover:bg-white/[0.03]" key={employee.id}>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
-                          <EmployeeAvatar name={employee.funcionario} />
+                          <EmployeeAvatar isLight={isLight} name={employee.funcionario} />
                           <div>
                             <p className="font-extrabold text-white">{employee.funcionario}</p>
                             <p className="mt-1 text-xs text-slate-500">#{employee.re || employee.cpf || "SEM-RE"}</p>
@@ -418,13 +421,17 @@ export default function FuncionariosPage() {
                       <td className="px-4 py-4 text-slate-300">{formatDateBr(employee.admissao || employee.dataAdmissao) || "-"}</td>
                       <td className="px-4 py-4">
                         <div className="flex justify-end gap-2">
-                          <ActionButton label="Ver" onClick={() => setViewEmployee(employee)} tone="view" />
-                          <ActionButton label="Editar" onClick={() => setEditingEmployee(employee)} tone="edit" />
+                          <ActionButton isLight={isLight} label="Ver" onClick={() => setViewEmployee(employee)} tone="view" />
+                          <ActionButton isLight={isLight} label="Editar" onClick={() => setEditingEmployee(employee)} tone="edit" />
                           <button
                             className={`grid size-9 place-items-center rounded-lg border transition ${
-                              employee.situacao === "ATIVO"
-                                ? "border-emerald-500/15 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/30 hover:bg-emerald-500/20"
-                                : "border-slate-500/15 bg-slate-500/10 text-slate-200 hover:border-slate-500/30 hover:bg-slate-500/20"
+                              isLight
+                                ? employee.situacao === "ATIVO"
+                                  ? "border-emerald-200 bg-emerald-100 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-200"
+                                  : "border-slate-200 bg-slate-100 text-slate-700 hover:border-slate-300 hover:bg-slate-200"
+                                : employee.situacao === "ATIVO"
+                                  ? "border-emerald-500/15 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/30 hover:bg-emerald-500/20"
+                                  : "border-slate-500/15 bg-slate-500/10 text-slate-200 hover:border-slate-500/30 hover:bg-slate-500/20"
                             }`}
                             onClick={() => handleToggleEmployeeStatus(employee)}
                             title={employee.situacao === "ATIVO" ? "Marcar como inativo" : "Marcar como ativo"}
@@ -433,12 +440,16 @@ export default function FuncionariosPage() {
                             <PowerIcon />
                           </button>
                           <button
-                            className="grid size-9 place-items-center rounded-lg border border-red-500/15 bg-red-500/10 text-red-300 transition hover:border-red-500/30 hover:bg-red-500/20"
+                            className={`grid size-9 place-items-center rounded-lg border transition ${
+                              isLight
+                                ? "border-red-200 bg-red-100 text-red-700 hover:border-red-300 hover:bg-red-200"
+                                : "border-red-500/15 bg-red-500/10 text-red-300 hover:border-red-500/30 hover:bg-red-500/20"
+                            }`}
                             onClick={() => handleDeleteEmployee(employee)}
                             title="Excluir funcionário"
                             type="button"
                           >
-                            <DeleteIcon />
+                            <DeleteIcon isLight={isLight} />
                           </button>
                         </div>
                       </td>
@@ -510,7 +521,7 @@ function SummaryCard({
   );
 }
 
-function EmployeeAvatar({ name }: { name: string }) {
+function EmployeeAvatar({ isLight, name }: { isLight: boolean; name: string }) {
   const initials = name
     .split(" ")
     .filter(Boolean)
@@ -520,7 +531,13 @@ function EmployeeAvatar({ name }: { name: string }) {
     .toUpperCase();
 
   return (
-    <div className="grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-slate-600 to-slate-900 text-sm font-black text-white">
+    <div
+      className={`grid size-11 shrink-0 place-items-center rounded-full text-sm font-black ${
+        isLight
+          ? "bg-gradient-to-br from-amber-100 via-amber-300 to-yellow-500 text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
+          : "bg-gradient-to-br from-slate-600 to-slate-900 text-white"
+      }`}
+    >
       {initials || "?"}
     </div>
   );
@@ -556,15 +573,29 @@ function StatusBadge({ status }: { status: EmployeeStatus }) {
   );
 }
 
-function ActionButton({ label, onClick, tone }: { label: string; onClick: () => void; tone: "view" | "edit" }) {
+function ActionButton({
+  isLight,
+  label,
+  onClick,
+  tone,
+}: {
+  isLight: boolean;
+  label: string;
+  onClick: () => void;
+  tone: "view" | "edit";
+}) {
   const styles =
-    tone === "view"
-      ? "border border-slate-500/15 bg-slate-500/10 text-slate-200 hover:border-slate-500/30 hover:bg-slate-500/20"
-      : "border border-yellow-500/15 bg-yellow-500/10 text-yellow-300 hover:border-yellow-500/30 hover:bg-yellow-500/20";
+    isLight
+      ? tone === "view"
+        ? "border border-slate-200 bg-slate-100 text-slate-700 hover:border-slate-300 hover:bg-slate-200"
+        : "border border-amber-200 bg-amber-100 text-amber-700 hover:border-amber-300 hover:bg-amber-200"
+      : tone === "view"
+        ? "border border-slate-500/15 bg-slate-500/10 text-slate-200 hover:border-slate-500/30 hover:bg-slate-500/20"
+        : "border border-yellow-500/15 bg-yellow-500/10 text-yellow-300 hover:border-yellow-500/30 hover:bg-yellow-500/20";
 
   return (
     <button className={`grid size-9 place-items-center rounded-lg transition ${styles}`} onClick={onClick} title={label} type="button">
-      <ActionIcon tone={tone} />
+      <ActionIcon isLight={isLight} tone={tone} />
     </button>
   );
 }
@@ -589,8 +620,8 @@ function SummaryIcon({ name, tone }: { name: SummaryIconName; tone: string }) {
   );
 }
 
-function ActionIcon({ tone }: { tone: "view" | "edit" }) {
-  const stroke = tone === "view" ? "#cbd5e1" : "#fcd34d";
+function ActionIcon({ isLight, tone }: { isLight: boolean; tone: "view" | "edit" }) {
+  const stroke = isLight ? (tone === "view" ? "#475569" : "#b45309") : tone === "view" ? "#cbd5e1" : "#fcd34d";
   const path = tone === "view" ? <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Zm9.5 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /> : <path d="M4 20h4l10-10-4-4L4 16v4Zm11-11 4 4" />;
 
   return (
@@ -600,9 +631,9 @@ function ActionIcon({ tone }: { tone: "view" | "edit" }) {
   );
 }
 
-function DeleteIcon() {
+function DeleteIcon({ isLight }: { isLight: boolean }) {
   return (
-    <svg aria-hidden="true" className="size-4" fill="none" stroke="#fca5a5" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
+    <svg aria-hidden="true" className="size-4" fill="none" stroke={isLight ? "#b91c1c" : "#fca5a5"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24">
       <path d="M3 6h18" />
       <path d="M8 6V4h8v2" />
       <path d="M6 6l1 14h10l1-14" />

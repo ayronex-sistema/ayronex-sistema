@@ -9,7 +9,7 @@ type AutomaticReadingsPanelProps = {
 
 export function AutomaticReadingsPanel({ readings, onConfirmUsage }: AutomaticReadingsPanelProps) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-zinc-950 p-6">
+    <section data-material-readings className="rounded-2xl border border-white/10 bg-zinc-950 p-6">
       <div className="flex flex-col gap-2 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-yellow-500">Leitura automática</p>

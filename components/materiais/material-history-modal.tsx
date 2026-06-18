@@ -13,7 +13,7 @@ export function MaterialHistoryModal({ material, history, onClose }: MaterialHis
   if (!material) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 p-4">
+    <div data-material-modal className="fixed inset-0 z-50 bg-black/80 p-4">
       <div className="mx-auto flex h-full w-full max-w-4xl items-center justify-center">
         <section className="max-h-[90vh] w-full overflow-hidden rounded-3xl border border-white/10 bg-zinc-950 shadow-2xl shadow-black">
           <div className="flex items-center justify-between gap-4 border-b border-white/10 p-6">

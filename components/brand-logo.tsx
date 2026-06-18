@@ -5,91 +5,53 @@ type BrandLogoProps = {
   showSubtitle?: boolean;
 };
 
-const colors = {
-  gold: "#f3c94d",
-  goldLight: "#fff0b8",
-  goldMid: "#d6b15a",
-  goldDark: "#8b6a20",
-  text: "#0b1020",
-  muted: "#94a3b8",
-};
-
-export function BrandLogo({ compact = false, showSubtitle = true }: BrandLogoProps) {
-  const iconSize = compact ? 40 : 56;
-  const titleSize = compact ? 17 : 28;
-  const subtitleSize = compact ? 10 : 11;
-  const gap = compact ? 12 : 16;
-
+function AyronexMark({ size = 56 }: { size?: number }) {
   return (
     <div
       style={{
-        alignItems: "center",
+        width: `${size}px`,
+        height: `${size}px`,
+        position: "relative",
         display: "flex",
-        gap,
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
       }}
     >
-      <div
-        style={{
-          alignItems: "center",
-          backgroundColor: "#000000",
-          border: "1px solid rgba(214, 177, 90, 0.4)",
-          borderRadius: compact ? 16 : 18,
-          boxShadow: "0 0 22px rgba(214, 177, 90, 0.16)",
-          display: "flex",
-          flex: "0 0 auto",
-          height: iconSize,
-          justifyContent: "center",
-          width: iconSize,
-        }}
-      >
-        <span
-          style={{
-            background: `linear-gradient(135deg, ${colors.goldLight} 0%, ${colors.goldMid} 55%, ${colors.goldDark} 100%)`,
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            color: "transparent",
-            display: "block",
-            fontFamily: "Arial, Helvetica, sans-serif",
-            fontSize: compact ? 28 : 34,
-            fontStyle: "italic",
-            fontWeight: 900,
-            lineHeight: 1,
-            transform: "translateY(-1px)",
-          }}
-        >
-          A
-        </span>
-      </div>
+      <svg viewBox="0 0 120 120" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+        <defs>
+          <linearGradient id="ayronex-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#f9e7a6" />
+            <stop offset="38%" stopColor="#d4af37" />
+            <stop offset="100%" stopColor="#8f6a00" />
+          </linearGradient>
+        </defs>
+        <circle cx="60" cy="60" r="49" fill="none" stroke="url(#ayronex-gold)" strokeWidth="4.5" />
+        <path d="M60 21 L86 91 H76 L68 69 H52 L44 91 H34 L60 21 Z" fill="url(#ayronex-gold)" />
+        <path d="M47 79 C59 74, 69 66, 83 47" fill="none" stroke="url(#ayronex-gold)" strokeWidth="8" strokeLinecap="round" />
+        <path d="M49 60 H72" fill="none" stroke="url(#ayronex-gold)" strokeWidth="7" strokeLinecap="round" />
+        <path d="M59.8 27 L64 38.5" fill="none" stroke="#f9e7a6" strokeWidth="5" strokeLinecap="round" opacity="0.7" />
+      </svg>
+      <div className="sr-only">Ayronex</div>
+    </div>
+  );
+}
 
-      <div style={{ minWidth: 0 }}>
-        <p
-          style={{
-            color: colors.gold,
-            fontFamily: "Arial, Helvetica, sans-serif",
-            fontSize: titleSize,
-            fontWeight: 900,
-            letterSpacing: "-0.03em",
-            lineHeight: 1,
-            margin: 0,
-          }}
-        >
-          AYRONEX
-        </p>
+export function BrandLogo({ compact = false, showSubtitle = true }: BrandLogoProps) {
+  const iconSize = compact ? 48 : 56;
+  const titleSize = compact ? "text-2xl" : "text-3xl";
+  const subtitleSize = compact ? "text-[10px]" : "text-[11px]";
+
+  return (
+    <div className={compact ? "inline-flex items-center gap-3" : "inline-flex items-center gap-4 rounded-3xl border border-zinc-800 bg-zinc-950/90 px-4 py-3"}>
+      <AyronexMark size={iconSize} />
+
+      <div className="leading-none">
+        <div className={`${titleSize} font-black tracking-[0.12em] text-white`}>AYRONEX</div>
         {showSubtitle ? (
-          <p
-            style={{
-              color: colors.muted,
-              fontFamily: "Arial, Helvetica, sans-serif",
-              fontSize: subtitleSize,
-              fontWeight: 500,
-              letterSpacing: compact ? "0.28em" : "0.34em",
-              lineHeight: 1,
-              margin: "6px 0 0",
-              textTransform: "uppercase",
-            }}
-          >
-            TELECOM & FIELD
-          </p>
+          <div className={`ayronex-logo-subtitle mt-1 ${subtitleSize} font-semibold uppercase tracking-[0.48em]`}>
+            Telecom &amp; Field
+          </div>
         ) : null}
       </div>
     </div>
