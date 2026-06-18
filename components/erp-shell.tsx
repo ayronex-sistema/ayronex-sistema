@@ -118,6 +118,13 @@ export function ErpShell({ active, children }: ErpShellProps) {
               <BrandLogo compact />
             </div>
 
+            <div className="ml-auto flex items-center gap-2 md:hidden">
+              <ThemeToggleButton
+                themeMode={theme.mode}
+                onToggle={() => setTheme({ ...theme, mode: theme.mode === "dark" ? "light" : "dark" })}
+              />
+            </div>
+
             <div className="hidden text-right md:block">
               <p className="text-sm font-bold">Administrador</p>
               <p className="mt-1 text-xs text-slate-400">admin@ayronex.com</p>
